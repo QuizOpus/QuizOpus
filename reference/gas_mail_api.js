@@ -1,17 +1,3 @@
-/**
- * CIQ the 13th 採点システム - メール送信専用GAS (Web App用)
- * 
- * ======================================================================
- * 【使い方】
- * 1. GAS（Google Apps Script）の新規プロジェクトを作成し、このコードを貼り付けます。
- * 2. 「デプロイ」>「新しいデプロイ」を選択。
- * 3. 種類の選択から「ウェブアプリ」を選ぶ。
- * 4. 実行するユーザーを「自分」、アクセスできるユーザーを「全員(匿名ユーザーを含む)」に設定してデプロイ。
- * 5. 発行されたウェブアプリのURLをコピーする。
- * 6. CIQシステム管理画面の「GAS（メール送信 API）連携設定」にそのURLを貼り付けて保存する。
- * ======================================================================
- */
-
 function doGet(e) {
   const p = e.parameter;
   const action = p.action;
@@ -30,10 +16,10 @@ function doGet(e) {
 
 function sendEntryMail(projectNameStr, email, familyName, firstName, entryNumberStr, pwStr, uuid) {
   if (!email) return;
-  
+
   const projectName = projectNameStr || '大会';
   const entryNumber = String(entryNumberStr).padStart(3, '0');
-  
+
   // UUIDからQRコード画像を生成
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(uuid)}`;
   const qrBlob = UrlFetchApp.fetch(qrUrl).getBlob().setName('QRcode.png');
