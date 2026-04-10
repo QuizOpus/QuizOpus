@@ -1,0 +1,30 @@
+{
+  "rules": {
+    "projects": {
+      "$projectId": {
+        "settings": {
+          ".read": true,
+          ".write": true
+        },
+        "config": {
+          ".read": true,
+          ".write": true
+        },
+        "answers_text": {
+          ".read": true,
+          ".write": true
+        },
+        "answers": {
+          ".read": true,
+          ".write": true
+        },
+        "scores": {
+          ".read": true,
+          ".write": true
+        }
+      }
+    },
+    ".read": false,
+    ".write": false
+  }
+}

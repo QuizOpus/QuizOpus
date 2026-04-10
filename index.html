@@ -7,6 +7,7 @@
   <title>CIQ the 13th 採点システム</title>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="js/config.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -178,20 +179,7 @@
       <button class="btn" onclick="createProject()">システムを新設する</button>
   </div>
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDk-RpKCX5Hd-xNnrso_x5fd3S-vUoWKUc",
-      authDomain: "ciq-saiten.firebaseapp.com",
-      databaseURL: "https://ciq-saiten-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "ciq-saiten",
-      storageBucket: "ciq-saiten.firebasestorage.app",
-      messagingSenderId: "987606904586",
-      appId: "1:987606904586:web:b16876b8963a55a60d94f3"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    let selectedRole = 'scorer';
+let selectedRole = 'scorer';
     let currentTab = 'join';
 
     function setTab(tab) {
@@ -225,15 +213,17 @@
       }
 
       const settings = snap.val();
-      if (settings.password !== pwd) {
+      const pwdHash = await hashPassword(pwd);
+      // 旧平文パスワードとの後方互換性を維持
+      if (settings.passwordHash ? settings.passwordHash !== pwdHash : settings.password !== pwd) {
         alert('パスワードが間違っています');
         return;
       }
 
       // ログイン成功
-      sessionStorage.setItem('projectId', pid);
-      sessionStorage.setItem('scorer_name', name);
-      sessionStorage.setItem('scorer_role', selectedRole);
+      session.set('projectId', pid);
+      session.set('scorer_name', name);
+      session.set('scorer_role', selectedRole);
       location.href = selectedRole === 'admin' ? 'judge.html' : 'judge.html';
     }
 
@@ -250,18 +240,19 @@
       // ランダムなIDを生成
       const pid = Math.random().toString(36).substring(2, 10).toLowerCase();
 
+      const pwdHash = await hashPassword(pwd);
       await db.ref('projects/' + pid + '/settings').set({
         projectName: pName,
-        password: pwd,
+        passwordHash: pwdHash,
         createdAt: firebase.database.ServerValue.TIMESTAMP,
         adminCreator: name
       });
 
       alert(`プロジェクトが作成されました！\n\n参加ID: ${pid}\nパスワード: ${pwd}\n\n※このIDを他のスタッフに共有してください`);
 
-      sessionStorage.setItem('projectId', pid);
-      sessionStorage.setItem('scorer_name', name);
-      sessionStorage.setItem('scorer_role', 'admin');
+      session.set('projectId', pid);
+      session.set('scorer_name', name);
+      session.set('scorer_role', 'admin');
       
       // 作成直後は設定画面（旧saiten.html）へ強制遷移してPDF等を作ってもらう
       location.href = 'saiten.html';

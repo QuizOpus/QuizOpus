@@ -7,6 +7,7 @@
     <title>CIQ the 13th 採点システム - 問題一覧</title>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="js/config.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -222,22 +223,9 @@
     <div class="q-grid" id="q-grid"></div>
 
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyDk-RpKCX5Hd-xNnrso_x5fd3S-vUoWKUc",
-            authDomain: "ciq-saiten.firebaseapp.com",
-            databaseURL: "https://ciq-saiten-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "ciq-saiten",
-            storageBucket: "ciq-saiten.firebasestorage.app",
-            messagingSenderId: "987606904586",
-            appId: "1:987606904586:web:b16876b8963a55a60d94f3"
-        };
-
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-
-        const projectId = sessionStorage.getItem('projectId');
-        const scorerName = sessionStorage.getItem('scorer_name');
-        const scorerRole = sessionStorage.getItem('scorer_role');
+const projectId = session.projectId;
+        const scorerName = session.scorerName;
+        const scorerRole = session.scorerRole;
 
         if (!projectId || !scorerName) location.href = 'index.html';
 
@@ -287,6 +275,16 @@
         }
         
         async function fetchMasterData() {
+            try {
+                const res = await fetch(GAS_URL + '?action=getMaster');
+                const data = await res.json();
+                if (data && typeof data === 'object') {
+                    // data は { entryNumber: { name, affiliation, grade }, ... } の形式を想定
+                    localStorage.setItem('masterData', JSON.stringify(data));
+                }
+            } catch (e) {
+                console.warn('マスターデータの取得に失敗:', e.message);
+            }
         }
 
         function updateGrid(scores) {
@@ -340,12 +338,12 @@
         function enterQ(q) {
             const card = document.getElementById(`qcard-${q}`);
             if (card.classList.contains('locked')) return;
-            sessionStorage.setItem('current_q', q);
+            localStorage.setItem('current_q', q);
             location.href = 'question.html';
         }
 
         function logout() {
-            sessionStorage.clear();
+            session.clear();
             location.href = 'index.html';
         }
         

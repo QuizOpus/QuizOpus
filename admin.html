@@ -7,6 +7,7 @@
     <title>CIQ the 13th 採点システム - 管理者</title>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="js/config.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -217,22 +218,15 @@
         </div>
     </div>
 
+    <div class="section" style="border: 2px solid #c62828; margin-top: 20px;">
+        <h2 style="color: #ef5350;">⚠ 危険な操作</h2>
+        <p style="font-size: 13px; color: #aaa; margin-bottom: 16px;">プロジェクトを完全に削除します。この操作は取り消せません。</p>
+        <button class="btn" style="background: #c62828;" onclick="deleteProject()">プロジェクトを削除</button>
+    </div>
+
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyDk-RpKCX5Hd-xNnrso_x5fd3S-vUoWKUc",
-            authDomain: "ciq-saiten.firebaseapp.com",
-            databaseURL: "https://ciq-saiten-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "ciq-saiten",
-            storageBucket: "ciq-saiten.firebasestorage.app",
-            messagingSenderId: "987606904586",
-            appId: "1:987606904586:web:b16876b8963a55a60d94f3"
-        };
-
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-
-        const projectId = sessionStorage.getItem('projectId');
-        const scorerRole = sessionStorage.getItem('scorer_role');
+const projectId = session.projectId;
+        const scorerRole = session.scorerRole;
         if (!projectId || scorerRole !== 'admin') {
             location.href = 'index.html';
         }
@@ -335,12 +329,12 @@
             const csvStatus = document.getElementById('csv-status');
             const csvBtn = document.getElementById('csv-btn');
 
-            if (allConfirmed && confirmedCount === 100) {
+            if (allConfirmed && confirmedCount === totalQuestions) {
                 csvStatus.textContent = '全問確定済み。CSV出力できます。';
                 csvStatus.className = 'csv-status ready';
                 csvBtn.disabled = false;
             } else {
-                csvStatus.textContent = `未確定の問題があります（確定済み: ${confirmedCount}/100）`;
+                csvStatus.textContent = `未確定の問題があります（確定済み: ${confirmedCount}/${totalQuestions}）`;
                 csvStatus.className = 'csv-status notready';
                 csvBtn.disabled = true;
             }
@@ -445,11 +439,11 @@
             let masterData = {};
             try {
                 // セッションストレージまたはフェッチでマスターデータを取得
-                masterData = JSON.parse(sessionStorage.getItem('masterData') || '{}');
+                masterData = JSON.parse(localStorage.getItem('masterData') || '{}');
                 if (Object.keys(masterData).length === 0) {
                     const res = await fetch(GAS_URL + '?master=1');
                     masterData = await res.json();
-                    sessionStorage.setItem('masterData', JSON.stringify(masterData));
+                    localStorage.setItem('masterData', JSON.stringify(masterData));
                 }
             } catch (e) {
                 console.warn('マスターデータ取得失敗:', e);
@@ -544,6 +538,20 @@
         window.addEventListener('online', () => {
              document.getElementById('offline-badge').style.display = 'none';
         });
+
+        async function deleteProject() {
+            const confirm1 = window.confirm('本当にこのプロジェクトを完全に削除しますか？\nすべてのデータが失われます。');
+            if (!confirm1) return;
+            const typed = window.prompt(`確認のため、プロジェクトID「${projectId}」を入力してください：`);
+            if (typed !== projectId) {
+                alert('プロジェクトIDが一致しません。削除を中止しました。');
+                return;
+            }
+            await db.ref(`projects/${projectId}`).remove();
+            alert('プロジェクトが削除されました。');
+            session.clear();
+            location.href = 'index.html';
+        }
 
         init();
     </script>

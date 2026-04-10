@@ -7,6 +7,7 @@
     <title>CIQ the 13th 採点システム - 答案設定</title>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="js/config.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="js/cv.js?v=1775799695"></script>
     <script src="js/aruco.js?v=1775799695"></script>
@@ -180,21 +181,8 @@
     <canvas id="transform-canvas" style="display:none"></canvas>
 
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyDk-RpKCX5Hd-xNnrso_x5fd3S-vUoWKUc",
-            authDomain: "ciq-saiten.firebaseapp.com",
-            databaseURL: "https://ciq-saiten-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "ciq-saiten",
-            storageBucket: "ciq-saiten.firebasestorage.app",
-            messagingSenderId: "987606904586",
-            appId: "1:987606904586:web:b16876b8963a55a60d94f3"
-        };
-
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-
-        const projectId = sessionStorage.getItem('projectId');
-        const scorerRole = sessionStorage.getItem('scorer_role');
+const projectId = session.projectId;
+        const scorerRole = session.scorerRole;
         if (!projectId || scorerRole !== 'admin') location.href = 'index.html';
 
         pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -266,20 +254,35 @@
                     }
                 }
 
-                // 一部のマーカーしか検出できなかった場合も180°回転を試行
+                // 一部のマーカーしか検出できなかった場合、90°/180°/270°回転を順に試行
                 if (detectedResult.error) {
-                    const tempCanvas = document.createElement('canvas');
-                    tempCanvas.width = workCanvas.width;
-                    tempCanvas.height = workCanvas.height;
-                    const tempCtx = tempCanvas.getContext('2d');
-                    tempCtx.translate(tempCanvas.width, tempCanvas.height);
-                    tempCtx.rotate(Math.PI);
-                    tempCtx.drawImage(workCanvas, 0, 0);
-                    workCtx.clearRect(0, 0, workCanvas.width, workCanvas.height);
-                    workCtx.drawImage(tempCanvas, 0, 0);
-                    const rotatedResult = detectTombo(config.tombo);
-                    if (!rotatedResult.error || rotatedResult.foundCount > detectedResult.foundCount) {
-                        detectedResult = rotatedResult;
+                    const originalImageData = workCtx.getImageData(0, 0, workCanvas.width, workCanvas.height);
+                    const rotations = [Math.PI, Math.PI / 2, -Math.PI / 2]; // 180°, 90°, 270°
+
+                    for (const angle of rotations) {
+                        const tempCanvas = document.createElement('canvas');
+                        const isRight = (Math.abs(angle) === Math.PI / 2);
+                        tempCanvas.width = isRight ? workCanvas.height : workCanvas.width;
+                        tempCanvas.height = isRight ? workCanvas.width : workCanvas.height;
+                        const tempCtx = tempCanvas.getContext('2d');
+                        tempCtx.translate(tempCanvas.width / 2, tempCanvas.height / 2);
+                        tempCtx.rotate(angle);
+                        tempCtx.drawImage(workCanvas, -workCanvas.width / 2, -workCanvas.height / 2);
+
+                        workCanvas.width = tempCanvas.width;
+                        workCanvas.height = tempCanvas.height;
+                        workCtx.drawImage(tempCanvas, 0, 0);
+
+                        const rotatedResult = detectTombo(config.tombo);
+                        if (!rotatedResult.error || rotatedResult.foundCount > detectedResult.foundCount) {
+                            detectedResult = rotatedResult;
+                        }
+                        if (!detectedResult.error) break;
+
+                        // 元に戻す
+                        workCanvas.width = originalImageData.width;
+                        workCanvas.height = originalImageData.height;
+                        workCtx.putImageData(originalImageData, 0, 0);
                     }
                 }
 
@@ -479,11 +482,12 @@
 
                 const item = document.createElement('div');
                 item.className = 'answer-item';
+                if (!isValid || a.tomboError) item.style.background = a.tomboError ? '#3a2b00' : '#3a1b1b';
                 item.innerHTML = `
           <img src="${a.cells[0]?.imageData}" alt="1問目" />
           <span>ページ ${a.page}</span>
           <span>受付番号: <strong>${a.entryNumber}</strong></span>
-          ${a.tomboError ? '<span style="font-size:11px;color:#ff9800">トンボ検出失敗</span>' : ''}
+          ${a.tomboError ? '<span style="font-size:11px;color:#ff9800">⚠ トンボ検出失敗（位置補正なし）</span>' : ''}
           <span class="badge ${isValid ? (a.tomboError ? 'warn' : 'ok') : 'error'}">
             ${isValid ? 'OK' : 'エラー'}
           </span>
@@ -491,8 +495,11 @@
                 list.appendChild(item);
             });
 
-            document.getElementById('result-summary').textContent =
-                `${okCount}件OK / ${warnCount}件警告 / ${errorCount}件エラー`;
+            let summaryText = `${okCount}件OK / ${warnCount}件警告 / ${errorCount}件エラー`;
+            if (warnCount > 0 || errorCount > 0) {
+                summaryText += '  ⚠ エラーのあるページは再スキャンを推奨します';
+            }
+            document.getElementById('result-summary').textContent = summaryText;
 
             if (errorCount === 0) {
                 document.getElementById('save-btn').disabled = false;
