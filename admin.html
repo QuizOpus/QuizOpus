@@ -229,40 +229,46 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbxUODC2F-hbGRvkOZ2EN-XRpatzJOgEwQiZxNvEZ_TFppXrgKN8rd7RcHHdEq9ZX2KW3A/exec';
-
+        const projectId = sessionStorage.getItem('projectId');
         const scorerRole = sessionStorage.getItem('scorer_role');
-        if (scorerRole !== 'admin') {
-            location.href = 'judge.html';
+        if (!projectId || scorerRole !== 'admin') {
+            location.href = 'index.html';
         }
 
-        const po = document.getElementById('progress-overview');
-        for (let i = 1; i <= 100; i++) {
-            const cell = document.createElement('div');
-            cell.className = 'po-cell';
-            cell.id = `po-${i}`;
-            cell.textContent = i;
-            po.appendChild(cell);
-        }
-
+        let GAS_URL = '';
+        let totalQuestions = 100;
         let scoresData = {};
         let entryNumbers = [];
 
         async function init() {
+            const configSnap = await db.ref(`projects/${projectId}/config`).once('value');
+            if (configSnap.exists()) totalQuestions = configSnap.val().questionCount || 100;
+            const settingsSnap = await db.ref(`projects/${projectId}/settings`).once('value');
+            if (settingsSnap.exists()) GAS_URL = settingsSnap.val().gasUrl || '';
+
+            const po = document.getElementById('progress-overview');
+            po.innerHTML = '';
+            for (let i = 1; i <= totalQuestions; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'po-cell';
+                cell.id = `po-${i}`;
+                cell.textContent = i;
+                po.appendChild(cell);
+            }
             try {
-                const res = await fetch('https://ciq-saiten-default-rtdb.asia-southeast1.firebasedatabase.app/answers.json?shallow=true');
+                const res = await fetch(`https://ciq-saiten-default-rtdb.asia-southeast1.firebasedatabase.app/projects/${projectId}/answers.json?shallow=true`);
                 const data = await res.json();
                 if (data) {
                     entryNumbers = Object.keys(data).map(Number).sort((a, b) => a - b);
                 }
             } catch(e) {
                 // fallback
-                const answersSnap = await db.ref('answers').get();
+                const answersSnap = await db.ref(`projects/${projectId}/answers`).get();
                 if (answersSnap.exists()) {
                     entryNumbers = Object.keys(answersSnap.val()).map(Number).sort((a, b) => a - b);
                 }
             }
-            db.ref('scores').on('value', snap => {
+            db.ref(`projects/${projectId}/scores`).on('value', snap => {
                 scoresData = snap.val() || {};
                 updateView();
             });
@@ -274,7 +280,7 @@
             let confirmedCount = 0;
             let allConfirmed = true;
 
-            for (let q = 1; q <= 100; q++) {
+            for (let q = 1; q <= totalQuestions; q++) {
                 const completedScorers = Object.keys(scoresData[`__completed__q${q}`] || {});
                 const allDone = completedScorers.length >= 3;
                 let hasConflict = false;
@@ -349,7 +355,7 @@
 
             const results = entryNumbers.map(entryNum => {
                 const answers = [];
-                for (let q = 1; q <= 100; q++) {
+                for (let q = 1; q <= totalQuestions; q++) {
                     const finalData = scoresData[`__final__q${q}`] || {};
                     const qScores = scoresData[entryNum]?.[`q${q}`] || {};
                     let result;
@@ -390,7 +396,7 @@
 
             results.sort((a, b) => {
                 if (b.score !== a.score) return b.score - a.score;
-                for (let i = 0; i < 100; i++) {
+                for (let i = 0; i < totalQuestions; i++) {
                     const diff = b.answers[i] - a.answers[i];
                     if (diff !== 0) return diff;
                 }
@@ -410,7 +416,7 @@
                         rank = idx + 1;
                     } else {
                         let diff = false;
-                        for (let i = 0; i < 100; i++) {
+                        for (let i = 0; i < totalQuestions; i++) {
                             if (prev.answers[i] !== r.answers[i]) { diff = true; break; }
                         }
                         if (diff) rank = idx + 1;
@@ -448,7 +454,7 @@
             const totalParticipants = entryNumbers.length || 1; // 0割回避
             const qStats = [];
 
-            for (let q = 1; q <= 100; q++) {
+            for (let q = 1; q <= totalQuestions; q++) {
                 let correctCount = 0;
                 let correctEntries = [];
                 

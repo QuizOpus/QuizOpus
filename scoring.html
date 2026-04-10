@@ -193,8 +193,9 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        const projectId = sessionStorage.getItem('projectId');
         const scorerRole = sessionStorage.getItem('scorer_role');
-        if (scorerRole !== 'admin') location.href = 'judge.html';
+        if (!projectId || scorerRole !== 'admin') location.href = 'index.html';
 
         pdfjsLib.GlobalWorkerOptions.workerSrc =
             'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -211,7 +212,7 @@
             const file = document.getElementById('pdf-file').files[0];
             if (!file) { alert('PDFを選択してください'); return; }
 
-            const snap = await db.ref('config').get();
+            const snap = await db.ref(`projects/${projectId}/config`).get();
             if (!snap.exists()) {
                 alert('座標設定が見つかりません');
                 return;
@@ -460,7 +461,7 @@
 
             const batch = {};
             for (const a of answers) {
-                batch[`answers/${a.entryNumber}`] = {
+                batch[`projects/${projectId}/answers/${a.entryNumber}`] = {
                     entryNumber: a.entryNumber,
                     page: a.page,
                     cells: a.cells.reduce((obj, c) => {

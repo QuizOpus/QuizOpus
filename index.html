@@ -68,6 +68,29 @@
       border-color: #4caf50;
     }
 
+    .tabs {
+      display: flex;
+      width: 100%;
+      margin-bottom: 24px;
+      border-bottom: 2px solid #444;
+    }
+
+    .tab {
+      flex: 1;
+      text-align: center;
+      padding: 12px;
+      color: #aaa;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.2s;
+    }
+
+    .tab.active {
+      color: #4caf50;
+      border-bottom: 2px solid #4caf50;
+      margin-bottom: -2px;
+    }
+
     .role-select {
       display: flex;
       gap: 12px;
@@ -116,19 +139,44 @@
 </head>
 
 <body>
-  <h1>CIQ the 13th 採点システム</h1>
-  <p>名前とロールを選択してください</p>
+  <h1>解答採点プラットフォーム</h1>
+  <p>プロジェクトを作成するか、IDを入力して参加してください</p>
+  
   <div class="card">
-    <label>名前</label>
-    <input type="text" id="name-input" placeholder="例：山田太郎" />
-    <label>ロール</label>
-    <div class="role-select">
-      <button class="role-btn selected" id="btn-scorer" onclick="selectRole('scorer')">採点者</button>
-      <button class="role-btn" id="btn-admin" onclick="selectRole('admin')">管理者</button>
+    <div class="tabs">
+      <div class="tab active" id="tab-join" onclick="setTab('join')">参加する</div>
+      <div class="tab" id="tab-create" onclick="setTab('create')">新規作成</div>
     </div>
-    <button class="btn" id="login-btn" onclick="login()">入室する</button>
-  </div>
 
+    <!-- 参加セクション -->
+    <div id="section-join">
+      <label>プロジェクトID</label>
+      <input type="text" id="join-id" placeholder="例: project-1234" />
+      <label>パスワード</label>
+      <input type="password" id="join-password" placeholder="アクセスコード" />
+      <label>あなたの名前</label>
+      <input type="text" id="join-name" placeholder="例：山田太郎" />
+      <label>ご自身のロール（入室後の権限）</label>
+      <div class="role-select">
+        <button class="role-btn selected" id="btn-scorer-join" onclick="selectRole('scorer')">採点者</button>
+        <button class="role-btn" id="btn-admin-join" onclick="selectRole('admin')">管理者</button>
+      </div>
+      <button class="btn" id="login-btn" onclick="joinProject()">入室する</button>
+    </div>
+
+    <!-- 新規作成セクション -->
+    <div id="section-create" style="display: none;">
+      <label>プロジェクト名（大会名など）</label>
+      <input type="text" id="create-project-name" placeholder="例：第13回 全日本大会" />
+      <label>パスワード（他人の不正アクセスを防ぐ）</label>
+      <input type="password" id="create-password" placeholder="任意のパスワード" />
+      <label>あなたの名前（最初の作成者）</label>
+      <input type="text" id="create-name" placeholder="例：山田太郎" />
+      <div class="role-select" style="display:none">
+        <button class="role-btn selected" id="btn-scorer-create" onclick="selectRole('admin')">管理者</button>
+      </div>
+      <button class="btn" onclick="createProject()">システムを新設する</button>
+  </div>
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDk-RpKCX5Hd-xNnrso_x5fd3S-vUoWKUc",
@@ -144,35 +192,93 @@
     const db = firebase.database();
 
     let selectedRole = 'scorer';
+    let currentTab = 'join';
+
+    function setTab(tab) {
+      currentTab = tab;
+      document.getElementById('tab-join').className = tab === 'join' ? 'tab active' : 'tab';
+      document.getElementById('tab-create').className = tab === 'create' ? 'tab active' : 'tab';
+      document.getElementById('section-join').style.display = tab === 'join' ? 'block' : 'none';
+      document.getElementById('section-create').style.display = tab === 'create' ? 'block' : 'none';
+    }
 
     function selectRole(role) {
       selectedRole = role;
-      document.getElementById('btn-scorer').classList.toggle('selected', role === 'scorer');
-      document.getElementById('btn-admin').classList.toggle('selected', role === 'admin');
+      document.getElementById('btn-scorer-join').className = role === 'scorer' ? 'role-btn selected' : 'role-btn';
+      document.getElementById('btn-admin-join').className = role === 'admin' ? 'role-btn selected' : 'role-btn';
     }
 
-    function login() {
-      const name = document.getElementById('name-input').value.trim();
-      if (!name) {
-        alert('名前を入力してください');
+    async function joinProject() {
+      const pid = document.getElementById('join-id').value.trim();
+      const pwd = document.getElementById('join-password').value;
+      const name = document.getElementById('join-name').value.trim();
+
+      if (!pid || !pwd || !name) {
+        alert('全ての項目を入力してください');
         return;
       }
 
-      // セッションに保存
+      const snap = await db.ref('projects/' + pid + '/settings').get();
+      if (!snap.exists()) {
+        alert('指定されたプロジェクトIDが見つかりません');
+        return;
+      }
+
+      const settings = snap.val();
+      if (settings.password !== pwd) {
+        alert('パスワードが間違っています');
+        return;
+      }
+
+      // ログイン成功
+      sessionStorage.setItem('projectId', pid);
       sessionStorage.setItem('scorer_name', name);
       sessionStorage.setItem('scorer_role', selectedRole);
-
-      // 採点画面へ
-      window.location.href = 'judge.html';
+      location.href = selectedRole === 'admin' ? 'judge.html' : 'judge.html';
     }
-    document.getElementById('name-input').addEventListener('keydown', function(event) {
-      if (event.isComposing || event.keyCode === 229) {
+
+    async function createProject() {
+      const pName = document.getElementById('create-project-name').value.trim();
+      const pwd = document.getElementById('create-password').value;
+      const name = document.getElementById('create-name').value.trim();
+
+      if (!pName || !pwd || !name) {
+        alert('全ての項目を入力してください');
         return;
       }
-      if (event.key === 'Enter') {
-        login();
+
+      // ランダムなIDを生成
+      const pid = Math.random().toString(36).substring(2, 10).toLowerCase();
+
+      await db.ref('projects/' + pid + '/settings').set({
+        projectName: pName,
+        password: pwd,
+        createdAt: firebase.database.ServerValue.TIMESTAMP,
+        adminCreator: name
+      });
+
+      alert(`プロジェクトが作成されました！\n\n参加ID: ${pid}\nパスワード: ${pwd}\n\n※このIDを他のスタッフに共有してください`);
+
+      sessionStorage.setItem('projectId', pid);
+      sessionStorage.setItem('scorer_name', name);
+      sessionStorage.setItem('scorer_role', 'admin');
+      
+      // 作成直後は設定画面（旧saiten.html）へ強制遷移してPDF等を作ってもらう
+      location.href = 'saiten.html';
+    }
+
+    // エンターキー対応
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        if (e.isComposing) return;
+        if (currentTab === 'join') {
+          joinProject();
+        } else {
+          createProject();
+        }
       }
     });
+
   </script>
 </body>
 

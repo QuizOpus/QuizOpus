@@ -222,10 +222,11 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        const projectId = sessionStorage.getItem('projectId');
         const scorerRole = sessionStorage.getItem('scorer_role');
-        if (scorerRole !== 'admin') {
-            alert('管理者のみアクセスできます');
-            location.href = 'judge.html';
+        if (!projectId || scorerRole !== 'admin') {
+            alert('管理者としてプロジェクトに入室してください');
+            location.href = 'index.html';
         }
 
         let answersData = {};
@@ -235,25 +236,32 @@
         let selectedIndex = 0;
         let currentConflicts = [];
 
+        let totalQuestions = 100;
+
         async function init() {
+            const configSnap = await db.ref(`projects/${projectId}/config`).once('value');
+            if(configSnap.exists()) {
+                totalQuestions = configSnap.val().questionCount || 100;
+            }
+
             try {
-                const res = await fetch('https://ciq-saiten-default-rtdb.asia-southeast1.firebasedatabase.app/answers.json?shallow=true');
+                const res = await fetch(`https://ciq-saiten-default-rtdb.asia-southeast1.firebasedatabase.app/projects/${projectId}/answers.json?shallow=true`);
                 const data = await res.json();
                 if (data) entryNumbers = Object.keys(data).map(Number).sort((a, b) => a - b);
             } catch(e) {
-                const answersSnap = await db.ref('answers').get();
+                const answersSnap = await db.ref(`projects/${projectId}/answers`).get();
                 if (answersSnap.exists()) {
                     answersData = answersSnap.val();
                     entryNumbers = Object.keys(answersData).map(Number).sort((a, b) => a - b);
                 }
             }
 
-            const answersTextSnap = await db.ref('answers_text').get();
+            const answersTextSnap = await db.ref(`projects/${projectId}/answers_text`).get();
             if (answersTextSnap.exists()) {
                 answersText = answersTextSnap.val();
             }
 
-            db.ref('scores').on('value', snap => {
+            db.ref(`projects/${projectId}/scores`).on('value', snap => {
                 scoresData = snap.val() || {};
                 render();
             });
@@ -262,7 +270,7 @@
         function render() {
             const conflicts = [];
 
-            for (let q = 1; q <= 100; q++) {
+            for (let q = 1; q <= totalQuestions; q++) {
                 const completedScorers = Object.keys(scoresData[`__completed__q${q}`] || {});
                 if (completedScorers.length < 3) continue;
 
@@ -284,7 +292,7 @@
             const promises = conflicts.map(async c => {
                 if (!answersData[c.entryNum]) answersData[c.entryNum] = { cells: {} };
                 if (answersData[c.entryNum].cells[`q${c.q}`] === undefined) {
-                    const snap = await db.ref(`answers/${c.entryNum}/cells/q${c.q}`).get();
+                    const snap = await db.ref(`projects/${projectId}/answers/${c.entryNum}/cells/q${c.q}`).get();
                     answersData[c.entryNum].cells[`q${c.q}`] = snap.val() || null;
                 }
             });
@@ -351,7 +359,7 @@
         }
 
         async function setFinal(q, entryNum, result) {
-            await db.ref(`scores/__final__q${q}/${entryNum}`).set(result);
+            await db.ref(`projects/${projectId}/scores/__final__q${q}/${entryNum}`).set(result);
         }
 
         function selectConflictCard(idx) {

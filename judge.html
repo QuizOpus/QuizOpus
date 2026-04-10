@@ -234,53 +234,61 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        const projectId = sessionStorage.getItem('projectId');
         const scorerName = sessionStorage.getItem('scorer_name');
         const scorerRole = sessionStorage.getItem('scorer_role');
 
-        if (!scorerName) location.href = 'index.html';
+        if (!projectId || !scorerName) location.href = 'index.html';
 
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbxUODC2F-hbGRvkOZ2EN-XRpatzJOgEwQiZxNvEZ_TFppXrgKN8rd7RcHHdEq9ZX2KW3A/exec';
+        let GAS_URL = '';
+        let totalQuestions = 100;
 
-        async function fetchMasterData() {
-            if (!sessionStorage.getItem('masterData')) {
-                try {
-                    const res = await fetch(GAS_URL + '?master=1');
-                    const data = await res.json();
-                    sessionStorage.setItem('masterData', JSON.stringify(data));
-                } catch (e) {
-                    console.warn('マスターデータ取得失敗:', e);
-                }
+        async function initializeApp() {
+            // プロジェクト設定を取得
+            const snapConfig = await db.ref(`projects/${projectId}/config`).once('value');
+            if (snapConfig.exists()) {
+                totalQuestions = snapConfig.val().questionCount || 100;
             }
+            const snapSettings = await db.ref(`projects/${projectId}/settings`).once('value');
+            if (snapSettings.exists()) {
+                GAS_URL = snapSettings.val().gasUrl || '';
+            }
+
+            if (GAS_URL) {
+                fetchMasterData();
+            }
+
+            document.getElementById('scorer-badge').textContent =
+                `${scorerName}（${scorerRole === 'admin' ? '管理者' : '採点者'}）`;
+
+            if (scorerRole === 'admin') {
+                document.getElementById('admin-bar').style.display = 'flex';
+            }
+
+            const qGrid = document.getElementById('q-grid');
+            qGrid.innerHTML = ''; // クリア
+            for (let i = 1; i <= totalQuestions; i++) {
+                const card = document.createElement('div');
+                card.className = 'q-card';
+                card.id = `qcard-${i}`;
+                card.innerHTML = `
+            <div class="q-num">${i}問</div>
+            <div class="q-scorers" id="qscorers-${i}"></div>
+            <div class="q-status status-open" id="qstatus-${i}">未着手</div>
+          `;
+                card.onclick = () => enterQ(i);
+                qGrid.appendChild(card);
+            }
+
+            db.ref(`projects/${projectId}/scores`).on('value', snap => {
+                updateGrid(snap.val() || {});
+            });
         }
-        fetchMasterData();
-
-        document.getElementById('scorer-badge').textContent =
-            `${scorerName}（${scorerRole === 'admin' ? '管理者' : '採点者'}）`;
-
-        if (scorerRole === 'admin') {
-            document.getElementById('admin-bar').style.display = 'flex';
-        }
-
-        const qGrid = document.getElementById('q-grid');
-        for (let i = 1; i <= 100; i++) {
-            const card = document.createElement('div');
-            card.className = 'q-card';
-            card.id = `qcard-${i}`;
-            card.innerHTML = `
-        <div class="q-num">${i}問</div>
-        <div class="q-scorers" id="qscorers-${i}"></div>
-        <div class="q-status status-open" id="qstatus-${i}">未着手</div>
-      `;
-            card.onclick = () => enterQ(i);
-            qGrid.appendChild(card);
-        }
-
-        db.ref('scores').on('value', snap => {
-            updateGrid(snap.val() || {});
-        });
+        
+        async function fetchMasterData() {
 
         function updateGrid(scores) {
-            for (let q = 1; q <= 100; q++) {
+            for (let q = 1; q <= totalQuestions; q++) {
                 const scorers = new Set();
                 Object.keys(scores).forEach(key => {
                     if (key.startsWith('__')) return;
@@ -338,6 +346,8 @@
             sessionStorage.clear();
             location.href = 'index.html';
         }
+        
+        initializeApp();
     </script>
 </body>
 
