@@ -166,6 +166,9 @@
       window.location.href = 'judge.html';
     }
     document.getElementById('name-input').addEventListener('keydown', function(event) {
+      if (event.isComposing || event.keyCode === 229) {
+        return;
+      }
       if (event.key === 'Enter') {
         login();
       }
