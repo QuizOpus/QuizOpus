@@ -9,6 +9,7 @@
     <script src="js/config.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
     <script src="js/cv.js"></script>
     <script src="js/aruco.js"></script>
     <style>
@@ -86,10 +87,73 @@
     </div>
 
     <div class="tabs">
+        <button class="tab-btn" onclick="switchTab('tab-entries')">参加者管理</button>
+        <button class="tab-btn" onclick="switchTab('tab-checkin')">当日受付</button>
         <button class="tab-btn active" onclick="switchTab('tab-sheet')">解答用紙</button>
         <button class="tab-btn" onclick="switchTab('tab-scan')">答案読込・管理</button>
         <button class="tab-btn" onclick="switchTab('tab-model')">模範解答</button>
-        <button class="tab-btn" onclick="switchTab('tab-stats')">集計・設定</button>
+        <button class="tab-btn" onclick="switchTab('tab-stats')">集計・開示設定</button>
+    </div>
+
+    <!-- ==================== TAB 0: 参加者管理 ==================== -->
+    <div class="tab-content" id="tab-entries">
+        <div class="section">
+            <h2>エントリー・公開設定</h2>
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+                <label style="margin:0;cursor:pointer;display:flex;align-items:center;gap:8px">
+                    <input type="checkbox" id="entry-list-toggle" onchange="toggleEntryList()" style="width:18px;height:18px;cursor:pointer">
+                    <span style="font-size:14px;color:white">名簿の一般公開を有効にする</span>
+                </label>
+            </div>
+            <div id="entry-url" style="font-size:13px;color:#aaa;background:#0f3460;padding:12px;border-radius:8px;margin-bottom:16px;">
+                一般公開URL: <a id="entry-link" href="#" target="_blank" style="color:#7c5cfc"></a>
+                <br>エントリーURL: <a id="registration-link" href="#" target="_blank" style="color:#7c5cfc"></a>
+            </div>
+            <button class="btn secondary" onclick="exportEntriesCSV()">全エントリー情報CSVエクスポート</button>
+        </div>
+        <div class="section">
+            <h2>参加者一覧 (詳細)</h2>
+            <button class="btn" style="margin-bottom:12px" onclick="loadAdminEntries()">最新情報を読み込む</button>
+            <div style="overflow-x:auto;max-height:400px;">
+                <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                    <thead style="background:#0f3460;position:sticky;top:0;">
+                        <tr>
+                            <th style="padding:8px;border:1px solid #444;">受付番号</th>
+                            <th style="padding:8px;border:1px solid #444;">氏名 (カナ)</th>
+                            <th style="padding:8px;border:1px solid #444;">エントリ名</th>
+                            <th style="padding:8px;border:1px solid #444;">所属・学年</th>
+                            <th style="padding:8px;border:1px solid #444;">メール/連絡事項</th>
+                            <th style="padding:8px;border:1px solid #444;">状態</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-entries-tbody"><tr style="color:#aaa"><td colspan="6" style="padding:12px;text-align:center">データを読み込んでください</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="section">
+            <h2>GAS（メール送信 API）連携設定</h2>
+            <div style="font-size:13px;color:#aaa;margin-bottom:8px">※ 参加者用の「自動返信メール」等を手配するためのWebhook URLを設定します。</div>
+            <input type="text" id="gas-url" placeholder="https://script.google.com/macros/s/..." />
+            <button class="btn" style="width:100%;margin-top:16px;padding:12px;font-weight:bold" onclick="saveGas()">保存</button>
+            <div id="gas-status" class="status-msg">✅ GAS設定を保存しました！</div>
+        </div>
+    </div>
+
+    <!-- ==================== TAB 0.5: 当日受付 ==================== -->
+    <div class="tab-content" id="tab-checkin">
+        <div class="section" style="text-align:center;">
+            <h2>QRコード受付リーダー</h2>
+            <div style="margin: 0 auto 20px auto; max-width: 400px; position:relative;">
+                <video id="qr-video" style="width:100%;border-radius:12px;border:3px solid #4caf50;background:#000;" playsinline></video>
+                <canvas id="qr-canvas" style="display:none;"></canvas>
+            </div>
+            <div id="qr-scanning-text" style="color:#aaa;margin-bottom:16px;">カメラに受付QRコード（またはスマホ画面）をかざしてください</div>
+            
+            <div id="checkin-result" style="display:none;margin: 0 auto 16px auto;max-width:400px;padding:20px;border-radius:12px;font-size:18px;"></div>
+            
+            <button class="btn" id="qr-start-btn" onclick="startQRScanner()">カメラ起動</button>
+            <button class="btn secondary" id="qr-next-btn" style="display:none;" onclick="resetQRScanner()">次の人を読み込む</button>
+        </div>
     </div>
 
     <!-- ==================== TAB 1: 解答用紙 ==================== -->
@@ -185,12 +249,20 @@
                 </table>
             </div>
         </div>
+
         <div class="section">
-            <h2>GAS（スプレッドシート）連携設定</h2>
-            <label>GAS 連携URL</label>
-            <input type="text" id="gas-url" placeholder="https://script.google.com/macros/s/..." />
-            <button class="btn" style="width:100%;margin-top:16px;padding:12px;font-weight:bold" onclick="saveGas()">保存</button>
-            <div id="gas-status" class="status-msg">✅ GAS設定を保存しました！</div>
+            <h2>成績開示</h2>
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+                <label style="margin:0;cursor:pointer;display:flex;align-items:center;gap:8px">
+                    <input type="checkbox" id="disclosure-toggle" onchange="toggleDisclosure()" style="width:18px;height:18px;cursor:pointer">
+                    <span style="font-size:14px;color:white">開示を有効にする</span>
+                </label>
+            </div>
+            <button class="btn" onclick="generateDisclosure()" id="gen-disclosure-btn">開示データを生成</button>
+            <div id="disclosure-status" class="status-msg"></div>
+            <div id="disclosure-url" style="margin-top:12px;font-size:13px;color:#aaa;display:none">
+                開示URL: <a id="disclosure-link" href="#" target="_blank" style="color:#7c5cfc"></a>
+            </div>
         </div>
         <div class="section" style="border:2px solid #c62828;">
             <h2 style="color:#ef5350;">⚠ 危険な操作</h2>
@@ -224,11 +296,30 @@
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(tabId).classList.add('active');
         const btns = document.querySelectorAll('.tab-btn');
-        const tabs = ['tab-sheet','tab-scan','tab-model','tab-stats'];
+        const tabs = ['tab-entries','tab-checkin','tab-sheet','tab-scan','tab-model','tab-stats'];
         btns[tabs.indexOf(tabId)]?.classList.add('active');
     }
 
     async function init() {
+        // ハッシュによるタブ指定
+        const hash = location.hash.replace('#', '');
+        if(hash && document.getElementById(hash)) {
+            switchTab(hash);
+        }
+
+        // プロジェクトアクセス日時更新とデータクリーンアップ
+        db.ref(`projects/${projectId}/lastAccess`).set(firebase.database.ServerValue.TIMESTAMP);
+        purgeOldImages();
+
+        // リンクURL設定
+        const lOrigins = window.location.origin + window.location.pathname.replace('admin.html', '');
+        document.getElementById('entry-link').href = `${lOrigins}entry_list.html?pid=${projectId}`;
+        document.getElementById('entry-link').textContent = `${lOrigins}entry_list.html?pid=${projectId}`;
+        document.getElementById('registration-link').href = `${lOrigins}entry.html?pid=${projectId}`;
+        document.getElementById('registration-link').textContent = `${lOrigins}entry.html?pid=${projectId}`;
+        document.getElementById('disclosure-link').href = `${lOrigins}disclosure.html`;
+        document.getElementById('disclosure-link').textContent = `${lOrigins}disclosure.html`;
+
         const configSnap = await db.ref(`projects/${projectId}/config`).once('value');
         if (configSnap.exists()) {
             const cfg = configSnap.val();
@@ -240,6 +331,15 @@
             const s = settingsSnap.val();
             GAS_URL = s.gasUrl || '';
             if (GAS_URL) document.getElementById('gas-url').value = GAS_URL;
+        }
+
+        const entryConfigSnap = await db.ref(`projects/${projectId}/entryConfig`).once('value');
+        if(entryConfigSnap.exists()) {
+            const ec = entryConfigSnap.val();
+            document.getElementById('entry-list-toggle').checked = !!ec.listEnabled;
+            const dt = document.getElementById('disclosure-toggle');
+            if(dt) dt.checked = !!ec.disclosureEnabled;
+            if(ec.disclosureEnabled) document.getElementById('disclosure-url').style.display='block';
         }
 
         // 集計用: 問題セル初期化
@@ -481,6 +581,7 @@
         for(const a of scanAnswers) {
             batch[`projects/${projectId}/answers/${a.entryNumber}`] = {
                 entryNumber: a.entryNumber, page: a.page, pageImage: a.pageImage,
+                uploadedAt: firebase.database.ServerValue.TIMESTAMP,
                 cells: a.cells.reduce((o,c)=>{o[`q${c.q}`]=c.imageData;return o;},{})
             };
         }
@@ -651,6 +752,223 @@
         const typed = prompt(`確認のため、プロジェクトID「${projectId}」を入力してください：`);
         if (typed !== projectId) { alert('プロジェクトIDが一致しません。削除を中止しました。'); return; }
         await db.ref(`projects/${projectId}`).remove(); alert('プロジェクトが削除されました。'); session.clear(); location.href = 'index.html';
+    }
+
+    // ============================
+    // データクリーンアップ処理
+    // ============================
+    async function purgeOldImages() {
+        // 7日以上前のanswers画像を全削除
+        const snap = await db.ref(`projects/${projectId}/answers`).get();
+        if(!snap.exists()) return;
+        const now = Date.now();
+        const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+        const updates = {};
+        snap.forEach(child => {
+            const data = child.val();
+            if(data.uploadedAt && (now - data.uploadedAt > SEVEN_DAYS)) {
+                // 画像データのみnullにする（成績の参照番号としては残す）
+                updates[`projects/${projectId}/answers/${child.key}/pageImage`] = null;
+                updates[`projects/${projectId}/answers/${child.key}/cells`] = null;
+            }
+        });
+        if(Object.keys(updates).length > 0) {
+            await db.ref().update(updates);
+            console.log("古い画像データをパージしました。");
+        }
+    }
+
+    // ============================
+    // 参加者管理・受付管理
+    // ============================
+    async function toggleEntryList() {
+        const enabled = document.getElementById('entry-list-toggle').checked;
+        await db.ref(`projects/${projectId}/entryConfig/listEnabled`).set(enabled);
+    }
+
+    async function loadAdminEntries() {
+        const tbody = document.getElementById('admin-entries-tbody');
+        tbody.innerHTML = '<tr><td colspan="6" style="padding:12px;text-align:center">読み込み中...</td></tr>';
+        
+        const snap = await db.ref(`projects/${projectId}/entries`).orderByChild('entryNumber').get();
+        if(!snap.exists()) {
+            tbody.innerHTML = '<tr><td colspan="6" style="padding:12px;text-align:center">名簿データがありません。</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = '';
+        snap.forEach(child => {
+            const v = child.val();
+            const tr = document.createElement('tr');
+            if(v.status === 'canceled') tr.style.opacity = '0.5';
+            const statText = v.status === 'canceled' ? '<span style="color:#ef5350">ｷｬﾝｾﾙ</span>' 
+                            : v.checkedIn ? '<span style="color:#4caf50">受付済</span>' : '未受付';
+            
+            tr.innerHTML = `
+                <td style="padding:8px;border:1px solid #444;">${v.entryNumber || '-'}</td>
+                <td style="padding:8px;border:1px solid #444;">${v.familyName} ${v.firstName}<br><span style="font-size:11px;color:#aaa">${v.familyNameKana} ${v.firstNameKana}</span></td>
+                <td style="padding:8px;border:1px solid #444;">${v.entryName || ''}</td>
+                <td style="padding:8px;border:1px solid #444;">${v.affiliation || ''}<br><span style="font-size:11px">${v.grade||''}</span></td>
+                <td style="padding:8px;border:1px solid #444;"><span style="font-size:11px;color:#aaa">${v.email||''}</span><br>${v.inquiry||'-'}</td>
+                <td style="padding:8px;border:1px solid #444;font-weight:bold;">${statText}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    async function exportEntriesCSV() {
+        const snap = await db.ref(`projects/${projectId}/entries`).orderByChild('entryNumber').get();
+        if(!snap.exists()) return;
+        const rows = [['受付番号','姓','名','セイ','メイ','メールアドレス','所属機関','学年','エントリー名','意気込み','連絡事項','状態','UUID']];
+        snap.forEach(child => {
+            const v = child.val();
+            const stat = v.status === 'canceled' ? 'canceled' : v.checkedIn ? 'checkedIn' : 'registered';
+            rows.push([
+                v.entryNumber, v.familyName, v.firstName, v.familyNameKana, v.firstNameKana, 
+                v.email, v.affiliation, v.grade, v.entryName, `"${(v.message||'').replace(/"/g,'""')}"`, 
+                `"${(v.inquiry||'').replace(/"/g,'""')}"`, stat, v.uuid
+            ]);
+        });
+        const csv = rows.map(r => r.join(',')).join('\n');
+        const blob = new Blob(['\uFEFF' + csv], {type: 'text/csv;charset=utf-8;'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = 'entries.csv'; a.click();
+    }
+
+    // QR Reception Implementation
+    let qrScanning = false;
+    let qrStream = null;
+    
+    function startQRScanner() {
+        if(typeof jsQR === 'undefined') { alert("QRライブラリが読み込まれていません"); return; }
+        const video = document.getElementById('qr-video');
+        document.getElementById('qr-start-btn').style.display = 'none';
+        
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+        .then(stream => {
+            qrStream = stream;
+            video.srcObject = stream;
+            video.addEventListener('loadedmetadata', () => { video.play(); qrScanning = true; requestAnimationFrame(scanQRFrame); });
+        }).catch(err => {
+            alert('カメラの起動に失敗しました: ' + err.message);
+            document.getElementById('qr-start-btn').style.display = 'inline-block';
+        });
+    }
+
+    function scanQRFrame() {
+        if (!qrScanning) return;
+        const video = document.getElementById('qr-video');
+        const canvas = document.getElementById('qr-canvas');
+        const ctx = canvas.getContext('2d');
+
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height);
+            if (code) {
+                qrScanning = false; 
+                processQRCode(code.data);
+            }
+        }
+        if(qrScanning) requestAnimationFrame(scanQRFrame);
+    }
+
+    async function processQRCode(uuid) {
+        document.getElementById('qr-scanning-text').textContent = '読み込み中...';
+        const resDiv = document.getElementById('checkin-result');
+        const nextBtn = document.getElementById('qr-next-btn');
+
+        try {
+            const snap = await db.ref(`projects/${projectId}/entries/${uuid}`).once('value');
+            if(!snap.exists()) {
+                resDiv.innerHTML = '❌ 該当するエントリーが見つかりません'; resDiv.style.background = 'rgba(183,28,28,0.8)';
+            } else {
+                const data = snap.val();
+                if(data.status === 'canceled') {
+                    resDiv.innerHTML = `❌ キャンセル済みのエントリーです。<br><span style="font-size:14px;color:#ffcc80">${data.familyName} ${data.firstName} / 受付番号: ${data.entryNumber}</span>`; 
+                    resDiv.style.background = 'rgba(183,28,28,0.8)';
+                } else if(data.checkedIn) {
+                    resDiv.innerHTML = `⚠️ 既に受付済みです。<br><span style="font-size:14px;color:#ffcc80">${data.familyName} ${data.firstName} / 受付番号: ${data.entryNumber}</span>`; 
+                    resDiv.style.background = 'rgba(230,81,0,0.8)';
+                } else {
+                    // Update to checked in
+                    await db.ref(`projects/${projectId}/entries/${uuid}/checkedIn`).set(true);
+                    resDiv.innerHTML = `✅ 受付完了！<br><span style="font-size:24px;font-weight:bold">${data.familyName} ${data.firstName} 様</span><br><span style="font-size:18px;color:#a5d6a7">受付番号: <b>${data.entryNumber}</b></span>`; 
+                    resDiv.style.background = 'rgba(27,94,32,0.8)';
+                }
+            }
+        } catch(e) {
+            resDiv.innerHTML = '❌ システムエラー: ' + e.message; resDiv.style.background = 'rgba(183,28,28,0.8)';
+        }
+
+        document.getElementById('qr-scanning-text').style.display = 'none';
+        resDiv.style.display = 'block';
+        nextBtn.style.display = 'inline-block';
+    }
+
+    function resetQRScanner() {
+        document.getElementById('checkin-result').style.display = 'none';
+        document.getElementById('qr-next-btn').style.display = 'none';
+        document.getElementById('qr-scanning-text').textContent = 'カメラに受付QRコード（またはスマホ画面）をかざしてください';
+        document.getElementById('qr-scanning-text').style.display = 'block';
+        qrScanning = true;
+        requestAnimationFrame(scanQRFrame);
+    }
+
+    // ============================
+    // 成績開示
+    // ============================
+    async function toggleDisclosure() {
+        const enabled = document.getElementById('disclosure-toggle').checked;
+        await db.ref(`projects/${projectId}/entryConfig/disclosureEnabled`).set(enabled);
+        document.getElementById('disclosure-url').style.display = enabled ? 'block' : 'none';
+    }
+
+    async function generateDisclosure() {
+        const btn = document.getElementById('gen-disclosure-btn');
+        btn.disabled = true; btn.textContent = '生成中...';
+        try {
+            const updates = {};
+            // すべてのentryNumbersについてスコアを計算
+            entryNumbers.forEach(en => {
+                const results = {};
+                for(let q=1; q<=totalQuestions; q++) {
+                    const fd = scoresData[`__final__q${q}`] || {};
+                    const qs = scoresData[en]?.[`q${q}`] || {};
+                    let r = 'hold';
+                    if (fd[en]) { r = fd[en]; }
+                    else {
+                        const vals = Object.values(qs);
+                        const co = vals.filter(x=>x==='correct').length;
+                        const wr = vals.filter(x=>x==='wrong').length;
+                        const ho = vals.filter(x=>x==='hold').length;
+                        if(ho > 0 || (co>0 && wr>0)) { /* conflict = ignore for now or treat as hold */ }
+                        else if(co>=2) r = 'correct';
+                        else if(wr>=2) r = 'wrong';
+                        else if(co===1) r = 'correct'; // fallback if only 1 scorer
+                        else if(wr===1) r = 'wrong';
+                    }
+                    results[`q${q}`] = r;
+                }
+                const score = Object.values(results).filter(x => x==='correct').length;
+                updates[`projects/${projectId}/disclosure/${en}`] = {
+                    score,
+                    totalQuestions,
+                    results
+                };
+            });
+            await db.ref().update(updates);
+            
+            const msg = document.getElementById('disclosure-status');
+            msg.textContent = '開示データを生成しFirebaseに保存しました！';
+            msg.style.display = 'block';
+            setTimeout(() => msg.style.display='none', 3500);
+
+        } catch (e) {
+            alert('生成に失敗: ' + e.message);
+        }
+        btn.disabled = false; btn.textContent = '開示データを生成';
     }
 
     init();

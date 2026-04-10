@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CIQ the 13th - エントリーリスト</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="js/config.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: white;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container { width: 100%; max-width: 900px; margin: 0 auto; }
+        
+        .header { text-align: center; margin-bottom: 40px; }
+        .header h1 { font-size: 32px; font-weight: 700; letter-spacing: 1px; margin-bottom: 8px; }
+        .header p { color: #8e8ea0; font-size: 15px; }
+
+        .stat-card {
+            background: rgba(22, 33, 62, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 16px 24px;
+            border-radius: 12px;
+            display: inline-block;
+            margin-bottom: 24px;
+        }
+        .stat-val { font-size: 24px; font-weight: bold; color: #7c5cfc; }
+        .stat-label { font-size: 13px; color: #8e8ea0; margin-left: 8px; }
+
+        .list-container {
+            background: rgba(22, 33, 62, 0.85);
+            backdrop-filter: blur(12px);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th, td { padding: 16px; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        th { background: rgba(0,0,0,0.2); font-weight: 600; color: #aaa; white-space: nowrap; }
+        td { color: #f5f5f5; vertical-align: middle; }
+        
+        .c-time { color: #888; font-size: 12px; white-space: nowrap; }
+        .c-name { font-size: 16px; font-weight: bold; }
+        .c-affil { color: #90caf9; }
+        .c-msg { font-size: 13px; color: #ccc; line-height: 1.4; word-break: break-word; }
+
+        .disabled-msg { text-align: center; padding: 60px 20px; color: #8e8ea0; font-size: 16px; }
+        
+        @media (max-width: 600px) {
+            table, thead, tbody, th, td, tr { display: block; }
+            thead tr { display: none; }
+            tr { padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+            td { padding: 4px 0; border: none; }
+            .c-time { margin-bottom: 6px; }
+            .c-affil, .c-grade { display: inline-block; margin-right: 8px; font-size: 13px; }
+            .c-msg { margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 id="page-title">エントリーリスト</h1>
+            <p>※ リアルタイム更新</p>
+        </div>
+
+        <div id="content-area" style="display:none">
+            <div style="text-align: center;">
+                <div class="stat-card">
+                    <span class="stat-val" id="total-count">-</span><span class="stat-label">名 エントリー済</span>
+                </div>
+            </div>
+
+            <div class="list-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>エントリー日時</th>
+                            <th>所属・学年</th>
+                            <th>エントリーネーム</th>
+                            <th>意気込み</th>
+                        </tr>
+                    </thead>
+                    <tbody id="list-body">
+                        <tr><td colspan="4" style="text-align:center;color:#888;">読み込み中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="list-container disabled-msg" id="disabled-msg">
+            🔒 現在エントリーリストは非公開です。
+        </div>
+    </div>
+
+    <script>
+    const params = new URLSearchParams(location.search);
+    const projectId = params.get('pid');
+
+    if (!projectId) {
+        document.getElementById('disabled-msg').innerHTML = 'プロジェクトが指定されていません。正しいURLへアクセスしてください。';
+    }
+
+    async function init() {
+        if (!projectId) return;
+
+        // 設定の購読
+        db.ref(`projects/${projectId}/settings`).once('value', s => {
+            if(s.exists()) {
+                const pName = s.val().projectName;
+                if(pName) document.getElementById('page-title').textContent = `${pName} - エントリーリスト`;
+            }
+        });
+
+        // 公開設定監視
+        db.ref(`projects/${projectId}/entryConfig/listEnabled`).on('value', snap => {
+            const isEnabled = snap.exists() && snap.val() === true;
+            if (isEnabled) {
+                document.getElementById('disabled-msg').style.display = 'none';
+                document.getElementById('content-area').style.display = 'block';
+                loadList();
+            } else {
+                document.getElementById('disabled-msg').style.display = 'block';
+                document.getElementById('content-area').style.display = 'none';
+                unsubscribeList();
+            }
+        });
+    }
+
+    let listRef = null;
+    let listListener = null;
+
+    function unsubscribeList() {
+        if (listRef && listListener) {
+            listRef.off('value', listListener);
+            listListener = null;
+        }
+    }
+
+    function loadList() {
+        if (listListener) return; // 既に接続済み
+
+        listRef = db.ref(`projects/${projectId}/entries`);
+        listListener = listRef.on('value', snap => {
+            const body = document.getElementById('list-body');
+            body.innerHTML = '';
+            let count = 0;
+
+            if (snap.exists()) {
+                const data = snap.val();
+                
+                // 配列化してソート (エントリー番号順)
+                const entries = Object.values(data).filter(e => e.status !== 'canceled');
+                entries.sort((a, b) => (a.entryNumber || 0) - (b.entryNumber || 0));
+
+                count = entries.length;
+
+                entries.forEach(e => {
+                    const d = new Date(e.timestamp || Date.now());
+                    const m = (d.getMonth()+1).toString().padStart(2,'0');
+                    const day = d.getDate().toString().padStart(2,'0');
+                    const h = d.getHours().toString().padStart(2,'0');
+                    const min = d.getMinutes().toString().padStart(2,'0');
+                    const timeStr = `${m}/${day} ${h}:${min}`;
+
+                    const grade = e.grade !== '非表示' ? `(${e.grade})` : '';
+                    
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="c-time">${timeStr} <span style="color:#555;font-size:11px;margin-left:4px">#${e.entryNumber}</span></td>
+                        <td><span class="c-affil">${e.affiliation}</span> <span class="c-grade">${grade}</span></td>
+                        <td class="c-name">${e.entryName}</td>
+                        <td class="c-msg">${e.message || ''}</td>
+                    `;
+                    body.appendChild(tr);
+                });
+            }
+
+            if (count === 0) {
+                body.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#888;">まだエントリーはありません。</td></tr>';
+            }
+            document.getElementById('total-count').textContent = count;
+        });
+    }
+
+    init();
+    </script>
+</body>
+</html>

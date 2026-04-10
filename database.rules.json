@@ -21,6 +21,18 @@
         "scores": {
           ".read": true,
           ".write": true
+        },
+        "entries": {
+          ".read": true,
+          ".write": true
+        },
+        "entryConfig": {
+          ".read": true,
+          ".write": true
+        },
+        "disclosure": {
+          ".read": true,
+          ".write": true
         }
       }
     },

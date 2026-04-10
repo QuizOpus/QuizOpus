@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CIQ the 13th - キャンセルフォーム</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="js/config.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container { width: 100%; max-width: 480px; }
+        .logo { text-align: center; margin-bottom: 32px; }
+        .logo h1 { font-size: 28px; font-weight: 700; letter-spacing: 1px; }
+        .logo p { color: #8e8ea0; font-size: 14px; margin-top: 6px; }
+
+        .card {
+            background: rgba(22, 33, 62, 0.85);
+            backdrop-filter: blur(12px);
+            border-radius: 20px;
+            padding: 32px;
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+        
+        .form-group { margin-bottom: 20px; }
+        label { font-size: 13px; color: #8e8ea0; display: block; margin-bottom: 6px; font-weight: 600; }
+        
+        input {
+            width: 100%; padding: 14px 16px; border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1); background: rgba(15,52,96,0.6);
+            color: white; font-size: 16px; font-family: sans-serif;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        input:focus { outline: none; border-color: #ef5350; box-shadow: 0 0 0 2px rgba(239,83,80,0.2); }
+        input::placeholder { color: #555; }
+
+        .submit-btn {
+            width: 100%; padding: 16px; border-radius: 12px; border: none;
+            background: linear-gradient(135deg, #ef5350, #b71c1c);
+            color: white; font-size: 16px; font-weight: 700; cursor: pointer;
+            margin-top: 12px; transition: transform 0.15s, box-shadow 0.2s;
+            font-family: 'Outfit', sans-serif; letter-spacing: 1px;
+        }
+        .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(239,83,80,0.4); }
+        .submit-btn:active { transform: translateY(0); }
+        .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .status-msg {
+            margin-top: 20px; padding: 16px; border-radius: 10px;
+            font-size: 14px; text-align: center; display: none; line-height: 1.5;
+        }
+        .status-msg.error { background: rgba(239,83,80,0.15); border: 1px solid rgba(239,83,80,0.3); color: #ef5350; }
+        .status-msg.success { background: rgba(76,175,80,0.15); border: 1px solid rgba(76,175,80,0.3); color: #81c784; }
+
+        .warning-text { margin-bottom: 24px; font-size: 13px; color: #ffab40; background: rgba(255,171,64,0.1); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,171,64,0.2); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <h1>エントリーキャンセル</h1>
+            <p>Cancellation Form</p>
+        </div>
+
+        <div class="card" id="form-card">
+            <div class="warning-text">
+                ⚠️ キャンセルをするとエントリーは無効となり、取り消すことはできません。<br>
+                ※ 受付番号は欠番となります。
+            </div>
+
+            <div class="form-group">
+                <label>受付番号</label>
+                <input type="text" id="f-number" required placeholder="例: 12">
+            </div>
+
+            <div class="form-group">
+                <label>登録メールアドレス</label>
+                <input type="email" id="f-email" required placeholder="example@gmail.com">
+            </div>
+
+            <div class="form-group">
+                <label>パスワード (連携用英数字6桁)</label>
+                <input type="text" id="f-password" required placeholder="------">
+            </div>
+
+            <button class="submit-btn" id="submit-btn" onclick="processCancel()">キャンセルを確定する</button>
+            <div class="status-msg" id="status-msg"></div>
+        </div>
+    </div>
+
+    <script>
+    const params = new URLSearchParams(location.search);
+    let projectId = params.get('pid');
+
+    if (!projectId) {
+        projectId = prompt("プロジェクトIDを入力してください (URLにパラメータが設定されていません):");
+        if(projectId) {
+            history.replaceState(null, null, `?pid=${projectId}`);
+        } else {
+            document.getElementById('form-card').innerHTML = '<p style="text-align:center;color:#8e8ea0;">プロジェクトIDが不明です。正しいリンクからアクセスしてください。</p>';
+        }
+    }
+
+    function showStatus(msg, type) {
+        const sm = document.getElementById('status-msg');
+        sm.innerHTML = msg;
+        sm.className = `status-msg ${type}`;
+        sm.style.display = 'block';
+    }
+
+    async function processCancel() {
+        const numStr = document.getElementById('f-number').value.trim();
+        const email = document.getElementById('f-email').value.trim();
+        const pw = document.getElementById('f-password').value.trim();
+
+        if (!numStr || !email || !pw) {
+            showStatus('すべての項目を入力してください。', 'error');
+            return;
+        }
+
+        const entryNum = parseInt(numStr, 10);
+
+        const btn = document.getElementById('submit-btn');
+        btn.disabled = true;
+        btn.textContent = '認証中...';
+        showStatus('データを確認しています...', '');
+
+        try {
+            // 受付番号で検索
+            const snap = await db.ref(`projects/${projectId}/entries`)
+                .orderByChild('entryNumber').equalTo(entryNum).once('value');
+
+            if (!snap.exists()) {
+                showStatus('指定された受付番号が見つかりません。', 'error');
+                btn.disabled = false; btn.textContent = 'キャンセルを確定する';
+                return;
+            }
+
+            let targetKey = null;
+            let targetData = null;
+            let matched = false;
+
+            const pwHash = await hashPassword(pw);
+
+            snap.forEach(child => {
+                const data = child.val();
+                if (data.email === email && (data.disclosurePw === pwHash || data.disclosurePw === pw)) {
+                    targetKey = child.key;
+                    targetData = data;
+                    matched = true;
+                }
+            });
+
+            if (!matched) {
+                showStatus('メールアドレスまたはパスワードが正しくありません。', 'error');
+                btn.disabled = false; btn.textContent = 'キャンセルを確定する';
+                return;
+            }
+
+            if (targetData.status === 'canceled') {
+                showStatus('このエントリーは既にキャンセルされています。', 'error');
+                btn.disabled = false; btn.textContent = 'キャンセルを確定する';
+                return;
+            }
+
+            // 更新処理
+            await db.ref(`projects/${projectId}/entries/${targetKey}`).update({
+                status: 'canceled',
+                canceledAt: firebase.database.ServerValue.TIMESTAMP
+            });
+
+            document.getElementById('form-card').innerHTML = `
+                <div style="text-align:center;">
+                    <h2 style="color:#ef5350;margin-bottom:16px;">キャンセル完了</h2>
+                    <p style="color:#8e8ea0;line-height:1.6;">
+                        受付番号 ${entryNum} (${targetData.entryName} 様) の<br>エントリーキャンセルを受け付けました。<br>
+                        ご利用ありがとうございました。
+                    </p>
+                </div>
+            `;
+
+        } catch (err) {
+            console.error(err);
+            showStatus('システムエラーが発生しました。', 'error');
+            btn.disabled = false; btn.textContent = 'キャンセルを確定する';
+        }
+    }
+    </script>
+</body>
+</html>
