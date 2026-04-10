@@ -192,10 +192,8 @@
           doc.rect(x, y, colWidth, rowHeight, 'S');
           doc.text((i + 1).toString(), x + 2, y + 4);
 
-          // システムが読み取る解答枠 (x + 8 から右端まで)
-          const ansX = x + 8;
-          const ansW = colWidth - 8;
-          config.answerRegions.push({ x: ansX, y, w: ansW, h: rowHeight });
+          // システムが読み取る解答枠 (枠全体を対象にする)
+          config.answerRegions.push({ x, y, w: colWidth, h: rowHeight });
 
           // もし見た目上の枠線も引きたい場合はここに記述(今回は不要)
         }
