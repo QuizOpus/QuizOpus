@@ -880,35 +880,18 @@
             let current = 0;
             const total = scanAnswers.length;
             document.getElementById('status-text').textContent = `保存中... (0/${total})`;
-            
+
             for (const a of scanAnswers) {
-                // 基本データだけ先に保存
-                await db.ref(`projects/${projectId}/answers/${a.entryNumber}`).set({
-                    entryNumber: a.entryNumber,
-                    page: a.page,
-                    uploadedAt: firebase.database.ServerValue.TIMESTAMP
-                });
-                
-                // 画像データは容量が大きいので別々に更新
-                await db.ref(`projects/${projectId}/answers/${a.entryNumber}/pageImage`).set(a.pageImage);
-
-                // セルの画像データも小分けにして更新 (20問ずつ)
-                const BATCH_SIZE = 20;
-                let cellsBatch = {};
-                for (let i = 0; i < a.cells.length; i++) {
-                    const c = a.cells[i];
-                    cellsBatch[`q${c.q}`] = c.imageData;
-                    
-                    if (Object.keys(cellsBatch).length >= BATCH_SIZE || i === a.cells.length - 1) {
-                         await db.ref(`projects/${projectId}/answers/${a.entryNumber}/cells`).update(cellsBatch);
-                         cellsBatch = {};
-                    }
-                }
-
+                const data = {
+                    entryNumber: a.entryNumber, page: a.page, pageImage: a.pageImage,
+                    uploadedAt: firebase.database.ServerValue.TIMESTAMP,
+                    cells: a.cells.reduce((o, c) => { o[`q${c.q}`] = c.imageData; return o; }, {})
+                };
+                await db.ref(`projects/${projectId}/answers/${a.entryNumber}`).set(data);
                 current++;
                 document.getElementById('status-text').textContent = `保存中... (${current}/${total})`;
             }
-            
+
             document.getElementById('status-text').textContent = '保存完了しました';
             document.getElementById('save-btn').disabled = false;
             loadEntryList();
@@ -1252,11 +1235,9 @@
             const btn = document.getElementById('gen-disclosure-btn');
             btn.disabled = true; btn.textContent = '生成中...';
             try {
+                const updates = {};
                 // すべてのentryNumbersについてスコアを計算
-                let updates = {};
-                let count = 0;
-                for (let i = 0; i < entryNumbers.length; i++) {
-                    const en = entryNumbers[i];
+                entryNumbers.forEach(en => {
                     const results = {};
                     for (let q = 1; q <= totalQuestions; q++) {
                         const fd = scoresData[`__final__q${q}`] || {};
@@ -1282,14 +1263,8 @@
                         totalQuestions,
                         results
                     };
-                    
-                    count++;
-                    if (count >= 50 || i === entryNumbers.length - 1) {
-                         await db.ref().update(updates);
-                         updates = {};
-                         count = 0;
-                    }
-                }
+                });
+                await db.ref().update(updates);
 
                 const msg = document.getElementById('disclosure-status');
                 msg.textContent = '開示データを生成しFirebaseに保存しました！';
