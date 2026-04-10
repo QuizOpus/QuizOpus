@@ -877,16 +877,21 @@
 
         async function saveToFirebase() {
             document.getElementById('save-btn').disabled = true;
-            document.getElementById('status-text').textContent = '保存中...';
-            const batch = {};
+            let current = 0;
+            const total = scanAnswers.length;
+            document.getElementById('status-text').textContent = `保存中... (0/${total})`;
+            
             for (const a of scanAnswers) {
-                batch[`projects/${projectId}/answers/${a.entryNumber}`] = {
+                const data = {
                     entryNumber: a.entryNumber, page: a.page, pageImage: a.pageImage,
                     uploadedAt: firebase.database.ServerValue.TIMESTAMP,
                     cells: a.cells.reduce((o, c) => { o[`q${c.q}`] = c.imageData; return o; }, {})
                 };
+                await db.ref(`projects/${projectId}/answers/${a.entryNumber}`).set(data);
+                current++;
+                document.getElementById('status-text').textContent = `保存中... (${current}/${total})`;
             }
-            await db.ref('/').update(batch);
+            
             document.getElementById('status-text').textContent = '保存完了しました';
             document.getElementById('save-btn').disabled = false;
             loadEntryList();
