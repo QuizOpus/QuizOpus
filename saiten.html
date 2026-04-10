@@ -132,7 +132,7 @@
         const config = {
           questionCount: qCount,
           columns: qCols,
-          scale: 1, // ミリメートル空間のスケール（読取時にどう拡大縮小されても射影変換で吸収できる）
+          scale: 3, // PDF→Canvas変換時の倍率。1だとマーカーが小さすぎて認識不能。3以上で安定検出。
           tombo: [],
           markCells: [],
           answerRegions: []

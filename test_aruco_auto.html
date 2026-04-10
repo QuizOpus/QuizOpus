@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<script src="js/cv.js"></script>
+<script src="js/aruco.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+body { font-family: monospace; background: #1a1a2e; color: white; padding: 20px; }
+canvas { border: 1px solid #444; margin: 10px; }
+.result { padding: 8px; margin: 4px 0; border-radius: 4px; }
+.ok { background: #1b5e20; }
+.fail { background: #b71c1c; }
+</style>
+</head>
+<body>
+<h2>Auto PDF ArUco Detection Test</h2>
+<p>Automatically loads test_answer_sheet.pdf and tests marker detection</p>
+<canvas id="pdf-canvas"></canvas>
+<div id="results"></div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+async function run() {
+    const div = document.getElementById('results');
+    div.innerHTML = 'Loading PDF...';
+    
+    try {
+        const response = await fetch('test_answer_sheet.pdf');
+        const arrayBuffer = await response.arrayBuffer();
+        const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        const page = await pdfDoc.getPage(1);
+        
+        const scales = [1.0, 1.5, 2.0, 3.0, 4.0];
+        div.innerHTML = '';
+        
+        for (const scale of scales) {
+            const viewport = page.getViewport({ scale });
+            const canvas = document.getElementById('pdf-canvas');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            const ctx = canvas.getContext('2d');
+            
+            // IMPORTANT: White background BEFORE rendering
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            await page.render({ canvasContext: ctx, viewport }).promise;
+            
+            // Check & fix transparency
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            let transparentPixels = 0;
+            let blackPixels = 0;
+            let whitePixels = 0;
+            
+            for (let i = 0; i < imgData.data.length; i += 4) {
+                if (imgData.data[i + 3] < 255) {
+                    transparentPixels++;
+                    const a = imgData.data[i + 3] / 255;
+                    imgData.data[i] = imgData.data[i] * a + 255 * (1 - a);
+                    imgData.data[i + 1] = imgData.data[i + 1] * a + 255 * (1 - a);
+                    imgData.data[i + 2] = imgData.data[i + 2] * a + 255 * (1 - a);
+                    imgData.data[i + 3] = 255;
+                }
+                const r = imgData.data[i], g = imgData.data[i+1], b = imgData.data[i+2];
+                if (r < 30 && g < 30 && b < 30) blackPixels++;
+                if (r > 225 && g > 225 && b > 225) whitePixels++;
+            }
+            ctx.putImageData(imgData, 0, 0);
+            
+            // Sample corner regions to verify markers are visible
+            const markerRegion = 15 * scale; // margin=5mm + marker=10mm = 15mm
+            const topLeftRegion = ctx.getImageData(0, 0, Math.ceil(markerRegion), Math.ceil(markerRegion));
+            let tlBlack = 0;
+            for (let i = 0; i < topLeftRegion.data.length; i += 4) {
+                if (topLeftRegion.data[i] < 128) tlBlack++;
+            }
+            
+            // Try detection
+            const detector = new AR.Detector();
+            const markers = detector.detect(imgData);
+            
+            const result = document.createElement('div');
+            result.className = `result ${markers.length >= 4 ? 'ok' : 'fail'}`;
+            result.innerHTML = 
+                `<b>Scale ${scale}:</b> Canvas ${canvas.width}x${canvas.height}<br>` +
+                `Transparent pixels: ${transparentPixels} / ${imgData.data.length/4}<br>` +
+                `Black pixels: ${blackPixels}, White pixels: ${whitePixels}<br>` +
+                `Top-left corner black pixels: ${tlBlack} / ${topLeftRegion.data.length/4}<br>` +
+                `minSize threshold (0.10*w): ${Math.round(canvas.width * 0.10)}<br>` +
+                `Contours: ${detector.contours.length}, Polys(4-sided): ${detector.polys.length}, Candidates: ${detector.candidates.length}<br>` +
+                `<b>Detected markers: ${markers.length} (IDs: ${markers.map(m => m.id).join(', ') || 'none'})</b>`;
+            div.appendChild(result);
+        }
+    } catch(e) {
+        div.innerHTML = `<div class="result fail">Error: ${e.message}<br>${e.stack}</div>`;
+    }
+}
+
+run();
+</script>
+</body>
+</html>
