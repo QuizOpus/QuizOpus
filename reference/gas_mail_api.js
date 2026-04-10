@@ -20,7 +20,7 @@ function sendEntryMail(projectNameStr, email, familyName, firstName, entryNumber
   const projectName = projectNameStr || '大会';
   const entryNumber = String(entryNumberStr).padStart(3, '0');
 
-  // UUIDからQRコード画像生成
+  // UUIDからQRコード画像を生成
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(uuid)}`;
   const qrBlob = UrlFetchApp.fetch(qrUrl).getBlob().setName('QRcode.png');
 
