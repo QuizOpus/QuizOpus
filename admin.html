@@ -157,6 +157,9 @@
     <div class="top-bar">
         <button class="btn secondary" onclick="location.href='judge.html'">← 一覧へ</button>
         <h1>管理者画面</h1>
+        <div id="offline-badge" style="display: none; background: #e65100; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-left: auto; font-weight: bold;">
+            ⚠️ 通信切断中 (自動再送待機中)
+        </div>
     </div>
 
     <div class="section">
@@ -186,6 +189,30 @@
         <h2>CSV出力</h2>
         <div class="csv-status" id="csv-status">確認中...</div>
         <button class="btn" id="csv-btn" disabled onclick="exportCSV()">CSV出力</button>
+    </div>
+
+    <div class="section">
+        <h2>問題アナリティクス（難問・単独抽出）</h2>
+        <div style="margin-bottom: 12px; font-size: 13px; color: #aaa;">
+            正答率など詳細な分析データを下に表示します（基準: 正答数 <input type="number" id="analytics-threshold" value="5" min="0" max="100" style="width: 50px; padding: 4px; border-radius: 4px; border: 1px solid #444; background: #0f3460; color: white; text-align: center;" onchange="renderAnalytics()"> 人以下をハイライト化）。
+        </div>
+        <button class="btn secondary" id="analytics-csv-btn" onclick="exportAnalyticsCSV()">全問アナリティクスCSV出力</button>
+        
+        <div style="margin-top: 16px; overflow-x: auto; max-height: 400px;">
+            <table id="analytics-table" style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                <thead style="background: #0f3460; position: sticky; top: 0;">
+                    <tr>
+                        <th style="padding: 8px; border: 1px solid #444;">問</th>
+                        <th style="padding: 8px; border: 1px solid #444;">正答数</th>
+                        <th style="padding: 8px; border: 1px solid #444;">正答率</th>
+                        <th style="padding: 8px; border: 1px solid #444;">状態</th>
+                        <th style="padding: 8px; border: 1px solid #444;">正解者</th>
+                    </tr>
+                </thead>
+                <tbody id="analytics-tbody">
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <script>
@@ -307,6 +334,8 @@
                 csvStatus.className = 'csv-status notready';
                 csvBtn.disabled = true;
             }
+            // アナリティクステーブルの描写更新
+            renderAnalytics();
         }
 
         async function exportCSV() {
@@ -400,6 +429,111 @@
             a.download = 'ciq_result.csv';
             a.click();
         }
+
+        async function getAnalyticsData() {
+            const threshold = parseInt(document.getElementById('analytics-threshold').value) || 5;
+            let masterData = {};
+            try {
+                // セッションストレージまたはフェッチでマスターデータを取得
+                masterData = JSON.parse(sessionStorage.getItem('masterData') || '{}');
+                if (Object.keys(masterData).length === 0) {
+                    const res = await fetch(GAS_URL + '?master=1');
+                    masterData = await res.json();
+                    sessionStorage.setItem('masterData', JSON.stringify(masterData));
+                }
+            } catch (e) {
+                console.warn('マスターデータ取得失敗:', e);
+            }
+
+            const totalParticipants = entryNumbers.length || 1; // 0割回避
+            const qStats = [];
+
+            for (let q = 1; q <= 100; q++) {
+                let correctCount = 0;
+                let correctEntries = [];
+                
+                entryNumbers.forEach(entryNum => {
+                    const finalData = scoresData[`__final__q${q}`] || {};
+                    const qScores = scoresData[entryNum]?.[`q${q}`] || {};
+                    let result;
+                    if (finalData[entryNum]) {
+                        result = finalData[entryNum] === 'correct' ? 1 : 0;
+                    } else {
+                        const vals = Object.values(qScores);
+                        const corrects = vals.filter(v => v === 'correct').length;
+                        result = corrects >= 2 ? 1 : 0;
+                    }
+                    if (result === 1) {
+                        correctCount++;
+                        correctEntries.push(entryNum);
+                    }
+                });
+
+                const rate = Math.round((correctCount / totalParticipants) * 100);
+                const names = correctEntries.map(e => {
+                    const masterObj = masterData[e] || {};
+                    return masterObj.name ? `${masterObj.affiliation || ''} ${masterObj.name}`.trim() : `番号${e}`;
+                }).join(' / ');
+
+                let type = '';
+                if (correctCount === 0) type = '全滅';
+                else if (correctCount === 1) type = '単独正解';
+                else if (correctCount <= threshold) type = '少数正解';
+                
+                qStats.push({ q, correctCount, rate, type, names, isRare: correctCount <= threshold });
+            }
+            return qStats;
+        }
+
+        async function renderAnalytics() {
+            const tbody = document.getElementById('analytics-tbody');
+            if (entryNumbers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 12px;">データがありません</td></tr>';
+                return;
+            }
+            
+            const qStats = await getAnalyticsData();
+            tbody.innerHTML = qStats.map(stat => {
+                const style = stat.isRare ? 'background: rgba(255, 152, 0, 0.2); font-weight: bold;' : '';
+                const typeStyle = stat.type === '単独正解' ? 'color: #ff9800;' : (stat.type === '全滅' ? 'color: #ef5350;' : '');
+                
+                return `<tr style="${style}">
+                    <td style="padding: 8px; border: 1px solid #444; text-align: center;">${stat.q}</td>
+                    <td style="padding: 8px; border: 1px solid #444; text-align: center;">${stat.correctCount}人</td>
+                    <td style="padding: 8px; border: 1px solid #444; text-align: center;">${stat.rate}%</td>
+                    <td style="padding: 8px; border: 1px solid #444; text-align: center; ${typeStyle}">${stat.type}</td>
+                    <td style="padding: 8px; border: 1px solid #444; font-size: 12px;">${stat.names}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        async function exportAnalyticsCSV() {
+            const qStats = await getAnalyticsData();
+            const threshold = parseInt(document.getElementById('analytics-threshold').value) || 5;
+
+            const headers = ['問題番号', '正答数', '正答率(%)', '状態', '正解者一覧'];
+            const rows = [headers];
+            
+            qStats.forEach(stat => {
+                const safeNames = `"${stat.names.replace(/"/g, '""')}"`;
+                rows.push([stat.q, stat.correctCount, stat.rate, stat.type, safeNames]);
+            });
+
+            const csv = rows.map(r => r.join(',')).join('\n');
+            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `analytics_all_qs.csv`;
+            a.click();
+        }
+
+        window.addEventListener('offline', () => {
+             document.getElementById('offline-badge').style.display = 'block';
+        });
+        window.addEventListener('online', () => {
+             document.getElementById('offline-badge').style.display = 'none';
+        });
 
         init();
     </script>
