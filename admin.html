@@ -131,7 +131,11 @@
             <div class="section glass-panel">
                 <h2><i class="fa-solid fa-file-pdf"></i> 回答用紙の生成</h2>
                 <label><i class="fa-solid fa-list-ol"></i> 問題数</label>
-                <input type="number" id="question-count" value="100" min="10" max="200" step="10" style="max-width:200px" />
+                <div class="number-spinner-wrap" style="margin-top:8px">
+                    <button type="button" class="number-spinner-btn" onclick="adjustNumberInput('question-count', -10)"><i class="fa-solid fa-minus"></i></button>
+                    <input type="number" id="question-count" value="100" min="10" max="200" step="10" />
+                    <button type="button" class="number-spinner-btn" onclick="adjustNumberInput('question-count', 10)"><i class="fa-solid fa-plus"></i></button>
+                </div>
                 <div style="font-size:12px;color:var(--text-muted);margin-top:6px"><i class="fa-solid fa-circle-info"></i> 10の倍数で指定 / 列数は5固定</div>
                 <button class="btn" style="margin-top:20px" onclick="generatePDF()"><i class="fa-solid fa-download"></i> ダウンロード</button>
             </div>
@@ -231,8 +235,11 @@
                 <h2><i class="fa-solid fa-magnifying-glass-chart"></i> 問題アナリティクス</h2>
                 <div style="margin-bottom:12px;font-size:13px;color:var(--text-muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
                     <span>正答数</span>
-                    <input type="number" id="analytics-threshold" value="5" min="0" max="100"
-                        style="width:60px;padding:6px;text-align:center" onchange="renderAnalytics()">
+                    <div class="number-spinner-wrap">
+                        <button type="button" class="number-spinner-btn" onclick="adjustNumberInput('analytics-threshold', -1)"><i class="fa-solid fa-minus"></i></button>
+                        <input type="number" id="analytics-threshold" value="5" min="0" max="100" onchange="renderAnalytics()" />
+                        <button type="button" class="number-spinner-btn" onclick="adjustNumberInput('analytics-threshold', 1)"><i class="fa-solid fa-plus"></i></button>
+                    </div>
                     <span>人以下をハイライト</span>
                 </div>
                 <button class="btn secondary" onclick="exportAnalyticsCSV()"><i class="fa-solid fa-file-csv"></i> 全問データCSV</button>

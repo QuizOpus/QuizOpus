@@ -606,6 +606,20 @@ function showDbAuthError() {
             }
         }
 
+        window.adjustNumberInput = function(id, delta) {
+            const input = document.getElementById(id);
+            if (!input) return;
+            let val = parseInt(input.value) || 0;
+            const min = parseInt(input.min);
+            const max = parseInt(input.max);
+            val += delta;
+            if (!isNaN(min) && val < min) val = min;
+            if (!isNaN(max) && val > max) val = max;
+            input.value = val;
+            
+            const event = new Event('change', { bubbles: true });
+            input.dispatchEvent(event);
+        };
         // ============================
         // 設定更新処理
         // ============================

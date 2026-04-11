@@ -364,3 +364,52 @@ select option {
   color: var(--text-main);
   padding: 8px;
 }
+
+/* ===== Custom Number Input Spinner ===== */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+.number-spinner-wrap {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(15,23,42,0.4);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  max-width: 200px;
+}
+.number-spinner-btn {
+  background: rgba(255,255,255,0.05);
+  border: none;
+  color: var(--text-main);
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 16px;
+}
+.number-spinner-btn:hover {
+  background: rgba(255,255,255,0.15);
+  color: var(--primary);
+}
+.number-spinner-btn:active {
+  background: rgba(255,255,255,0.25);
+}
+.number-spinner-wrap input[type="number"] {
+  flex: 1;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  text-align: center;
+  padding: 0 10px !important;
+  max-width: 80px;
+  box-shadow: none !important;
+}
