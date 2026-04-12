@@ -28,12 +28,9 @@ const projectId = session.projectId;
             }
 
             try {
-                const answersRef = db.ref(`projects/${projectId}/protected/${secretHash}/answers`);
-                const keysSnap = await answersRef.orderByKey().once('value');
-                if (keysSnap.exists()) {
-                    keysSnap.forEach(child => { entryNumbers.push(Number(child.key)); });
-                    entryNumbers.sort((a, b) => a - b);
-                }
+                const res = await fetch(`https://quziopus-default-rtdb.asia-southeast1.firebasedatabase.app/projects/${projectId}/protected/${secretHash}/answers.json?shallow=true`);
+                const data = await res.json();
+                if (data) entryNumbers = Object.keys(data).map(Number).sort((a, b) => a - b);
             } catch(e) {
                 console.error('答案キー取得エラー:', e);
             }

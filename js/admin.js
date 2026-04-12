@@ -124,15 +124,11 @@ function showDbAuthError() {
             }
             document.getElementById('stat-total').textContent = totalQuestions;
 
-            // エントリ番号取得（SDKでキーのみ列挙）
+            // エントリ番号取得（REST API shallowでキーのみ高速取得）
             try {
-                const answersRef = db.ref(`projects/${projectId}/protected/${secretHash}/answers`);
-                const keysSnap = await answersRef.orderByKey().once('value');
-                if (keysSnap.exists()) {
-                    entryNumbers = [];
-                    keysSnap.forEach(child => { entryNumbers.push(Number(child.key)); });
-                    entryNumbers.sort((a, b) => a - b);
-                }
+                const res = await fetch(`https://quziopus-default-rtdb.asia-southeast1.firebasedatabase.app/projects/${projectId}/protected/${secretHash}/answers.json?shallow=true`);
+                const data = await res.json();
+                if (data) entryNumbers = Object.keys(data).map(Number).sort((a, b) => a - b);
             } catch (e) {
                 console.error('エントリ番号取得エラー:', e);
             }
@@ -419,13 +415,9 @@ function showDbAuthError() {
             const el = document.getElementById('entry-list');
             el.innerHTML = '<div style="color:#aaa">読み込み中...</div>';
             try {
-                const answersRef = db.ref(`projects/${projectId}/protected/${secretHash}/answers`);
-                const keysSnap = await answersRef.orderByKey().once('value');
-                entryListData = [];
-                if (keysSnap.exists()) {
-                    keysSnap.forEach(child => { entryListData.push(Number(child.key)); });
-                    entryListData.sort((a, b) => a - b);
-                }
+                const res = await fetch(`https://quziopus-default-rtdb.asia-southeast1.firebasedatabase.app/projects/${projectId}/protected/${secretHash}/answers.json?shallow=true`);
+                const data = await res.json();
+                entryListData = data ? Object.keys(data).map(Number).sort((a, b) => a - b) : [];
             } catch (e) {
                 console.error('答案リスト読み込みエラー:', e);
                 entryListData = [];
@@ -433,19 +425,52 @@ function showDbAuthError() {
             entryNumbers = [...entryListData]; // 全体のentryNumbersも更新
             let masterData = {};
             try { masterData = JSON.parse(localStorage.getItem('masterData') || '{}'); } catch (e) { }
-            if (entryListData.length === 0) { el.innerHTML = '<div style="color:#aaa">保存済み答案はありません</div>'; return; }
+
+            // カウントバッジ更新
+            document.getElementById('entry-count-badge').textContent = `${entryListData.length}件`;
+
+            if (entryListData.length === 0) {
+                el.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:40px;font-size:14px"><i class="fa-solid fa-box-open" style="font-size:28px;display:block;margin-bottom:12px;opacity:0.4"></i>保存済み答案はありません</div>';
+                document.getElementById('select-all-label').style.display = 'none';
+                document.getElementById('batch-delete-btn').style.display = 'none';
+                return;
+            }
+
+            // コントロール表示
+            document.getElementById('select-all-label').style.display = 'flex';
+            document.getElementById('batch-delete-btn').style.display = '';
+
             el.innerHTML = '';
+            const grid = document.createElement('div');
+            grid.className = 'entry-list-grid';
             entryListData.forEach(num => {
                 const md = masterData[num] || {};
                 const displayName = md.name || `No.${num}`;
-                const subInfo = md.name ? `No.${num}${md.affiliation ? ' / ' + md.affiliation : ''}` : '';
-                const item = document.createElement('div'); item.className = 'entry-list-item';
-                item.innerHTML = `<input type="checkbox" class="entry-cb" data-num="${num}"><span style="font-weight:bold;min-width:80px">${displayName}</span><span style="color:#aaa;font-size:13px">${subInfo}</span><button class="btn danger" style="margin-left:auto;padding:4px 10px;font-size:12px" onclick="deleteEntry(${num},event)">削除</button>`;
-                el.appendChild(item);
+                const subText = md.affiliation || '';
+                const card = document.createElement('div');
+                card.className = 'entry-card';
+                card.innerHTML = `
+                    <label class="scan-cb">
+                        <input type="checkbox" class="entry-cb" data-num="${num}" />
+                        <span class="cb-icon"><i class="fa-solid fa-check"></i></span>
+                    </label>
+                    <div class="entry-info">
+                        <div class="entry-name">${displayName}</div>
+                        ${subText ? `<div class="entry-sub">${subText}</div>` : ''}
+                    </div>
+                    <span class="entry-num-badge">#${num}</span>
+                `;
+                // チェック時のカードハイライト
+                const cb = card.querySelector('.entry-cb');
+                cb.addEventListener('change', () => {
+                    card.classList.toggle('selected', cb.checked);
+                    updateBatchBtn();
+                });
+                grid.appendChild(card);
             });
+            el.appendChild(grid);
             document.getElementById('batch-delete-btn').disabled = true;
             document.getElementById('select-all-cb').checked = false;
-            document.querySelectorAll('.entry-cb').forEach(cb => cb.addEventListener('change', updateBatchBtn));
         }
 
         function updateBatchBtn() {
@@ -454,7 +479,10 @@ function showDbAuthError() {
         }
         function toggleSelectAll() {
             const all = document.getElementById('select-all-cb').checked;
-            document.querySelectorAll('.entry-cb').forEach(cb => cb.checked = all);
+            document.querySelectorAll('.entry-cb').forEach(cb => {
+                cb.checked = all;
+                cb.closest('.entry-card')?.classList.toggle('selected', all);
+            });
             updateBatchBtn();
         }
         async function deleteEntry(num, e) {
