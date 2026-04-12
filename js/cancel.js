@@ -13,7 +13,7 @@ const params = new URLSearchParams(location.search);
     function showStatus(msg, type) {
         const sm = document.getElementById('status-msg');
         sm.innerHTML = msg;
-        sm.className = `status-msg ${type}`;
+        sm.className = `page-msg ${type}`;
         sm.style.display = 'block';
     }
 

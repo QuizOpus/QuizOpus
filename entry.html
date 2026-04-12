@@ -12,27 +12,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="css/design_system.css">
     <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-        }
-        .container { width: 100%; max-width: 600px; }
-
-        .logo { text-align: center; margin-bottom: 32px; }
-        .logo h1 { font-size: 28px; font-weight: 800; letter-spacing: 0.5px; }
-        .logo p { color: var(--text-muted); font-size: 14px; margin-top: 8px; }
-
         .form-group { margin-bottom: 20px; }
         .form-row { display: flex; gap: 16px; }
         .form-row .form-group { flex: 1; }
-
         .required::after { content: " *"; color: var(--danger); }
-
         .hint { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
-        
+
         input[type="email"], textarea {
             background: rgba(15, 23, 42, 0.6);
             border: 1px solid var(--glass-border);
@@ -49,7 +34,7 @@
         input[type="email"]:focus, textarea:focus {
             border-color: var(--primary);
             background: rgba(15, 23, 42, 0.9);
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
         }
         textarea { resize: vertical; min-height: 100px; }
         input::placeholder, textarea::placeholder { color: #475569; }
@@ -58,29 +43,9 @@
             display: flex; align-items: flex-start; gap: 10px;
             cursor: pointer; font-size: 13px; color: var(--text-muted); line-height: 1.5;
         }
-        .checkbox-label input[type="checkbox"] {
-            margin-top: 2px;
-        }
+        .checkbox-label input[type="checkbox"] { margin-top: 2px; }
 
-        .submit-btn {
-            width: 100%; padding: 16px; border-radius: var(--radius-md); border: none;
-            background: linear-gradient(135deg, var(--primary), var(--primary-hover));
-            color: white; font-size: 16px; font-weight: 700; cursor: pointer;
-            margin-top: 24px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            font-family: var(--font-family); letter-spacing: 0.5px;
-            box-shadow: var(--shadow-md);
-        }
-        .submit-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-glow); }
-        .submit-btn:active { transform: translateY(0); }
-        .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
-
-        .status-msg {
-            margin-top: 20px; padding: 14px; border-radius: var(--radius-md);
-            font-size: 14px; text-align: center; display: none; line-height: 1.5;
-        }
-        .status-msg.error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #f87171; }
-        .status-msg.success { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: #34d399; }
-        .status-msg.info { background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); color: #60a5fa; }
+        .page-msg.info { background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); color: #60a5fa; }
 
         .result-info-box {
             background: rgba(15, 23, 42, 0.6); padding: 24px;
@@ -94,27 +59,23 @@
             background: rgba(0,0,0,0.3); padding: 10px 16px; border-radius: var(--radius-sm); color: var(--text-main);
         }
         .pw-warning { color: #f87171; font-size: 12px; font-weight: 700; margin-top: 12px; }
-        
-        .disabled-msg {
-            text-align: center; padding: 40px 20px;
-            color: var(--text-muted); font-size: 16px; display: none;
-        }
     </style>
 </head>
 
-<body>
-    <div class="container">
-        <div class="logo" style="text-align:center; margin-bottom:32px;">
-            <h1 id="project-title"><i class="fa-solid fa-pen-to-square"></i> 大会エントリー</h1>
-            <p style="color:var(--text-muted); font-size:14px; margin-top:8px;">参加登録フォーム</p>
+<body class="page-wrapper">
+    <div class="page-container" style="max-width:600px">
+        <div class="page-logo">
+            <span class="logo-icon"><i class="fa-solid fa-pen-to-square"></i></span>
+            <h1 id="project-title">大会エントリー</h1>
+            <div class="logo-sub">参加登録フォーム</div>
         </div>
 
-        <div class="glass-panel disabled-msg" id="disabled-card">
-            <i class="fa-solid fa-ban" style="font-size:32px; margin-bottom:12px; display:block;"></i>
+        <div class="page-card page-disabled" id="disabled-card" style="display:none">
+            <i class="fa-solid fa-ban"></i>
             <p>エントリーは現在受け付けていません。</p>
         </div>
 
-        <div class="glass-panel" id="form-card">
+        <div class="page-card" id="form-card">
             <form id="entry-form">
                 <div class="form-group">
                     <label class="required"><i class="fa-solid fa-envelope"></i> メールアドレス</label>
@@ -190,12 +151,12 @@
                     </label>
                 </div>
 
-                <button type="submit" class="submit-btn" id="submit-btn"><i class="fa-solid fa-paper-plane"></i> エントリーを確定する</button>
+                <button type="submit" class="page-btn" id="submit-btn"><i class="fa-solid fa-paper-plane"></i> エントリーを確定する</button>
             </form>
-            <div class="status-msg" id="status-msg"></div>
+            <div class="page-msg" id="status-msg"></div>
         </div>
 
-        <div class="glass-panel" id="result-card" style="display:none; text-align:center;">
+        <div class="page-card" id="result-card" style="display:none; text-align:center;">
             <h2 style="color: #34d399; margin-bottom: 16px;"><i class="fa-solid fa-circle-check"></i> エントリー完了！</h2>
             <p style="margin-bottom: 24px; color: var(--text-muted);">以下の情報で受付いたしました。<br>メールアドレスにも同じ情報をお送りしています。</p>
 
@@ -210,6 +171,8 @@
 
             <button class="btn secondary" onclick="location.reload()"><i class="fa-solid fa-rotate-right"></i> 新しいエントリーを行う</button>
         </div>
+
+        <div class="page-footer">Powered by QuizOpus</div>
     </div>
 
     <script src="js/entry.js"></script>

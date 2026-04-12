@@ -109,7 +109,11 @@ function showDbAuthError() {
             const entryConfigSnap = await db.ref(`projects/${projectId}/protected/${secretHash}/entryConfig`).once('value');
             if (entryConfigSnap.exists()) {
                 const ec = entryConfigSnap.val();
-                document.getElementById('entry-list-toggle').checked = !!ec.listEnabled;
+                const isOpen = ec.entryOpen !== false; // default true
+                document.getElementById('entry-open-toggle').checked = isOpen;
+                updateEntryOpenStatus(isOpen);
+                if (ec.periodStart) document.getElementById('entry-period-start').value = ec.periodStart;
+                if (ec.periodEnd) document.getElementById('entry-period-end').value = ec.periodEnd;
             }
             // 開示は常に有効
             await db.ref(`projects/${projectId}/protected/${secretHash}/entryConfig/disclosureEnabled`).set(true);
@@ -824,9 +828,24 @@ function showDbAuthError() {
         // ============================
         // 参加者管理・受付管理
         // ============================
-        async function toggleEntryList() {
-            const enabled = document.getElementById('entry-list-toggle').checked;
-            await db.ref(`projects/${projectId}/protected/${secretHash}/entryConfig/listEnabled`).set(enabled);
+        async function toggleEntryOpen() {
+            const enabled = document.getElementById('entry-open-toggle').checked;
+            await db.ref(`projects/${projectId}/protected/${secretHash}/entryConfig/entryOpen`).set(enabled);
+            await db.ref(`projects/${projectId}/publicSettings/entryOpen`).set(enabled);
+            updateEntryOpenStatus(enabled);
+            showAdminToast(enabled ? 'エントリー受付を開始しました' : 'エントリー受付を停止しました', 'success');
+        }
+        function updateEntryOpenStatus(isOpen) {
+            const el = document.getElementById('entry-open-status');
+            if (isOpen) { el.textContent = '受付中'; el.style.color = '#34d399'; }
+            else { el.textContent = '停止中'; el.style.color = '#f87171'; }
+        }
+        async function saveEntryPeriod() {
+            const start = document.getElementById('entry-period-start').value || null;
+            const end = document.getElementById('entry-period-end').value || null;
+            await db.ref(`projects/${projectId}/protected/${secretHash}/entryConfig`).update({ periodStart: start, periodEnd: end });
+            await db.ref(`projects/${projectId}/publicSettings`).update({ periodStart: start, periodEnd: end });
+            showAdminToast('受付期間を保存しました', 'success');
         }
 
         async function loadAdminEntries() {

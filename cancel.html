@@ -10,52 +10,23 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="css/design_system.css">
     <style>
-        body {
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            padding: 24px;
-        }
-        .container { width: 100%; max-width: 480px; }
-        .logo { text-align: center; margin-bottom: 32px; }
-        .logo h1 { font-size: 28px; font-weight: 800; color: #f87171; }
-        .logo p { color: var(--text-muted); font-size: 14px; margin-top: 8px; }
-
-        .form-group { margin-bottom: 20px; }
-
         .warning-box {
-            margin-bottom: 24px; font-size: 13px; color: var(--warning);
-            background: rgba(245,158,11,0.1); padding: 16px; border-radius: var(--radius-md);
-            border: 1px solid rgba(245,158,11,0.3); line-height: 1.6;
+            margin-bottom: 20px; font-size: 13px; color: var(--warning);
+            background: rgba(245,158,11,0.08); padding: 14px 16px; border-radius: var(--radius-md);
+            border: 1px solid rgba(245,158,11,0.2); line-height: 1.7;
         }
-        .warning-box i { margin-right: 4px; }
-
-        .cancel-btn {
-            width: 100%; padding: 16px; border-radius: var(--radius-md); border: none;
-            background: linear-gradient(135deg, #f87171, var(--danger));
-            color: white; font-size: 16px; font-weight: 700; cursor: pointer;
-            margin-top: 12px; transition: all 0.2s; font-family: var(--font-family);
-            box-shadow: var(--shadow-md);
-        }
-        .cancel-btn:hover { transform: translateY(-2px); box-shadow: 0 0 12px rgba(239,68,68,0.4); }
-        .cancel-btn:active { transform: translateY(0); }
-        .cancel-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
-
-        .status-msg {
-            margin-top: 20px; padding: 14px; border-radius: var(--radius-md);
-            font-size: 14px; text-align: center; display: none; line-height: 1.5;
-        }
-        .status-msg.error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #f87171; }
-        .status-msg.success { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: #34d399; }
+        .form-group { margin-bottom: 18px; }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="logo">
-            <h1><i class="fa-solid fa-user-xmark"></i> エントリーキャンセル</h1>
-            <p>Cancellation Form</p>
+<body class="page-wrapper">
+    <div class="page-container">
+        <div class="page-logo">
+            <span class="logo-icon"><i class="fa-solid fa-user-xmark"></i></span>
+            <h1>エントリーキャンセル</h1>
+            <div class="logo-sub">Cancellation Form</div>
         </div>
 
-        <div class="glass-panel" id="form-card">
+        <div class="page-card" id="form-card">
             <div class="warning-box">
                 <i class="fa-solid fa-triangle-exclamation"></i> キャンセルをするとエントリーは無効となり、取り消すことはできません。<br>
                 <i class="fa-solid fa-circle-info"></i> 受付番号は欠番となります。
@@ -63,22 +34,24 @@
 
             <div class="form-group">
                 <label><i class="fa-solid fa-hashtag"></i> 受付番号</label>
-                <input type="text" id="f-number" required placeholder="例: 12">
+                <input type="text" class="page-input" id="f-number" required placeholder="例: 12">
             </div>
 
             <div class="form-group">
                 <label><i class="fa-solid fa-envelope"></i> 登録メールアドレス</label>
-                <input type="email" id="f-email" required placeholder="example@gmail.com">
+                <input type="email" class="page-input" id="f-email" required placeholder="example@gmail.com">
             </div>
 
             <div class="form-group">
                 <label><i class="fa-solid fa-key"></i> パスワード (連携用英数字6桁)</label>
-                <input type="text" id="f-password" required placeholder="------">
+                <input type="text" class="page-input" id="f-password" required placeholder="------">
             </div>
 
-            <button class="cancel-btn" id="submit-btn" onclick="processCancel()"><i class="fa-solid fa-trash"></i> キャンセルを確定する</button>
-            <div class="status-msg" id="status-msg"></div>
+            <button class="page-btn danger" id="submit-btn" onclick="processCancel()"><i class="fa-solid fa-trash"></i> キャンセルを確定する</button>
+            <div class="page-msg" id="status-msg"></div>
         </div>
+
+        <div class="page-footer">Powered by QuizOpus</div>
     </div>
 
     <script src="js/cancel.js"></script>

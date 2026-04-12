@@ -10,27 +10,16 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="css/design_system.css">
     <style>
-        body {
-            display: flex; flex-direction: column;
-            align-items: center; padding: 32px 24px;
-        }
-        .container { width: 100%; max-width: 900px; }
-
-        .header { text-align: center; margin-bottom: 40px; }
-        .header h1 { font-size: 32px; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 8px; }
-        .header p { color: var(--text-muted); font-size: 14px; font-weight: 600; }
-
-        .stat-card-wrapper { text-align: center; margin-bottom: 24px; }
-        .stat-card-inline {
+        .stat-badge {
             display: inline-flex; align-items: center; gap: 10px;
-            padding: 14px 24px;
+            padding: 12px 24px; margin-bottom: 24px;
         }
-        .stat-card-inline .stat-val {
+        .stat-badge .stat-val {
             font-size: 28px; font-weight: 800; color: var(--primary);
             background: linear-gradient(135deg, #60a5fa, var(--primary));
             -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
         }
-        .stat-card-inline .stat-label { font-size: 14px; color: var(--text-muted); font-weight: 600; }
+        .stat-badge .stat-label { font-size: 14px; color: var(--text-muted); font-weight: 600; }
 
         .list-container {
             border-radius: var(--radius-lg); overflow: hidden;
@@ -56,11 +45,6 @@
         .c-affil { color: #60a5fa; }
         .c-msg { font-size: 13px; color: var(--text-muted); line-height: 1.4; word-break: break-word; font-style: italic; }
 
-        .disabled-msg {
-            text-align: center; padding: 60px 20px;
-            color: var(--text-muted); font-size: 16px;
-        }
-
         @media (max-width: 600px) {
             table, thead, tbody, th, td, tr { display: block; }
             thead tr { display: none; }
@@ -72,16 +56,17 @@
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="header" style="text-align:center; margin-bottom:40px;">
-            <h1 id="page-title"><i class="fa-solid fa-clipboard-list"></i> エントリーリスト</h1>
-            <p style="color:var(--text-muted); font-size:14px; margin-top:8px; font-weight:600;"><i class="fa-solid fa-bolt"></i> リアルタイム更新</p>
+<body class="page-wrapper">
+    <div class="page-container wide">
+        <div class="page-logo">
+            <span class="logo-icon"><i class="fa-solid fa-clipboard-list"></i></span>
+            <h1 id="page-title">エントリーリスト</h1>
+            <div class="logo-sub"><i class="fa-solid fa-bolt"></i> リアルタイム更新</div>
         </div>
 
         <div id="content-area" style="display:none">
-            <div class="stat-card-wrapper">
-                <div class="stat-card-inline glass-panel">
+            <div style="text-align:center">
+                <div class="stat-badge glass-panel">
                     <span class="stat-val" id="total-count">-</span>
                     <span class="stat-label"><i class="fa-solid fa-user-check"></i> 名 エントリー済</span>
                 </div>
@@ -105,10 +90,12 @@
             </div>
         </div>
 
-        <div class="list-container disabled-msg" id="disabled-msg">
-            <i class="fa-solid fa-lock" style="font-size:32px; margin-bottom:12px; display:block;"></i>
+        <div class="page-card page-disabled" id="disabled-msg">
+            <i class="fa-solid fa-lock"></i>
             現在エントリーリストは非公開です。
         </div>
+
+        <div class="page-footer">Powered by QuizOpus</div>
     </div>
 
     <script src="js/entry_list.js"></script>

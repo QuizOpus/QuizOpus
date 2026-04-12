@@ -27,7 +27,7 @@ const params = new URLSearchParams(location.search);
         function showStatus(msg, type) {
             const sm = document.getElementById('status-msg');
             sm.textContent = msg;
-            sm.className = `status-msg ${type}`;
+            sm.className = `page-msg ${type}`;
             sm.style.display = 'block';
         }
 
@@ -137,11 +137,30 @@ const params = new URLSearchParams(location.search);
                     document.getElementById('project-title').innerHTML = `<i class="fa-solid fa-pen-to-square"></i> ${pName}`;
                     document.title = pName + ' - エントリー';
 
-                    
-                    // エントリー受付が無効になっていないかチェック
-                    if (settings.entryConfig && settings.entryConfig.entryEnabled === false) {
+                    // エントリー受付チェック
+                    let blocked = false;
+                    let blockMsg = '';
+                    if (settings.entryOpen === false) {
+                        blocked = true;
+                        blockMsg = '<p>エントリー受付は現在停止中です。</p><p style="margin-top:8px;font-size:13px">管理者が受付を再開するまでお待ちください。</p>';
+                    } else {
+                        const now = new Date();
+                        if (settings.periodStart && new Date(settings.periodStart) > now) {
+                            blocked = true;
+                            const startStr = new Date(settings.periodStart).toLocaleString('ja-JP');
+                            blockMsg = `<p>エントリー受付はまだ開始されていません。</p><p style="margin-top:8px;font-size:13px">受付開始: ${startStr}</p>`;
+                        }
+                        if (settings.periodEnd && new Date(settings.periodEnd) < now) {
+                            blocked = true;
+                            const endStr = new Date(settings.periodEnd).toLocaleString('ja-JP');
+                            blockMsg = `<p>エントリー受付は終了しました。</p><p style="margin-top:8px;font-size:13px">受付終了: ${endStr}</p>`;
+                        }
+                    }
+                    if (blocked) {
                         document.getElementById('form-card').style.display = 'none';
-                        document.getElementById('disabled-card').style.display = 'block';
+                        const d = document.getElementById('disabled-card');
+                        d.innerHTML = '<i class="fa-solid fa-lock" style="font-size:32px;margin-bottom:12px;display:block"></i>' + blockMsg;
+                        d.style.display = 'block';
                     }
                 } else {
                     document.getElementById('form-card').style.display = 'none';

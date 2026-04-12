@@ -10,42 +10,17 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="css/design_system.css">
     <style>
-        body {
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            padding: 24px;
-        }
-        .container { width: 100%; max-width: 480px; }
-        .logo { text-align: center; margin-bottom: 32px; }
-        .logo h1 { font-size: 28px; font-weight: 800; }
-        .logo p { color: var(--text-muted); font-size: 14px; margin-top: 8px; }
-
         .login-input {
             width: 100%; padding: 14px 16px; border-radius: var(--radius-md);
             border: 1px solid var(--glass-border); background: rgba(15,23,42,0.6);
             color: var(--text-main); font-size: 18px; font-family: 'Courier New', monospace;
             letter-spacing: 4px; text-align: center; outline: none;
-            transition: all 0.2s;
+            transition: all 0.2s; box-sizing: border-box;
         }
-        .login-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,0.2); }
+        .login-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
         .login-input::placeholder { letter-spacing: 0; font-size: 14px; color: #475569; font-family: var(--font-family); }
 
-        .submit-btn {
-            width: 100%; padding: 16px; border-radius: var(--radius-md); border: none;
-            background: linear-gradient(135deg, var(--primary), var(--primary-hover));
-            color: white; font-size: 16px; font-weight: 600; cursor: pointer;
-            margin-top: 24px; transition: all 0.2s; font-family: var(--font-family);
-            box-shadow: var(--shadow-md);
-        }
-        .submit-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-glow); }
-        .submit-btn:active { transform: translateY(0); }
-        .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-
-        .error-msg {
-            margin-top: 16px; padding: 12px; border-radius: var(--radius-md);
-            background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
-            color: #f87171; font-size: 14px; text-align: center; display: none;
-        }
+        .form-group { margin-bottom: 18px; }
 
         /* Results */
         .result { display: none; }
@@ -75,33 +50,36 @@
         .result-cell.wrong { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
 
         .back-btn {
-            display: block; margin: 24px auto 0; padding: 10px 24px;
+            display: block; margin: 20px auto 0; padding: 10px 24px;
             border-radius: var(--radius-md); border: 1px solid var(--glass-border);
             background: transparent; color: var(--text-muted); font-size: 14px;
             cursor: pointer; font-family: var(--font-family); transition: all 0.2s;
         }
         .back-btn:hover { color: white; background: rgba(255,255,255,0.05); }
-
-        .disabled-msg { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 16px; }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="logo">
-            <h1 id="logo-title"><i class="fa-solid fa-chart-column"></i> 成績開示</h1>
-            <p id="logo-subtitle">Score Disclosure</p>
+<body class="page-wrapper">
+    <div class="page-container">
+        <div class="page-logo">
+            <span class="logo-icon"><i class="fa-solid fa-chart-column"></i></span>
+            <h1 id="logo-title">成績開示</h1>
+            <div class="logo-sub" id="logo-subtitle">Score Disclosure</div>
         </div>
 
-        <div class="glass-panel" id="login-card">
-            <label><i class="fa-solid fa-hashtag"></i> 受付番号</label>
-            <input type="text" class="login-input" id="entry-number" maxlength="3" placeholder="001" inputmode="numeric" autocomplete="off">
-            <label style="margin-top:18px"><i class="fa-solid fa-key"></i> 開示用パスワード</label>
-            <input type="text" class="login-input" id="pw-input" maxlength="6" placeholder="英数字6桁" autocomplete="off">
-            <button class="submit-btn" id="submit-btn" onclick="checkDisclosure()"><i class="fa-solid fa-unlock"></i> 成績を確認する</button>
-            <div class="error-msg" id="error-msg"></div>
+        <div class="page-card" id="login-card">
+            <div class="form-group">
+                <label><i class="fa-solid fa-hashtag"></i> 受付番号</label>
+                <input type="text" class="login-input" id="entry-number" maxlength="3" placeholder="001" inputmode="numeric" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label><i class="fa-solid fa-key"></i> 開示用パスワード</label>
+                <input type="text" class="login-input" id="pw-input" maxlength="6" placeholder="英数字6桁" autocomplete="off">
+            </div>
+            <button class="page-btn" id="submit-btn" onclick="checkDisclosure()"><i class="fa-solid fa-unlock"></i> 成績を確認する</button>
+            <div class="page-msg error" id="error-msg"></div>
         </div>
 
-        <div class="glass-panel result" id="result-card">
+        <div class="page-card result" id="result-card">
             <div class="result-header">
                 <div class="result-name" id="result-name"></div>
                 <div class="result-score" id="result-score"></div>
@@ -112,11 +90,13 @@
             <button class="back-btn" onclick="showLogin()"><i class="fa-solid fa-arrow-left"></i> 戻る</button>
         </div>
 
-        <div class="glass-panel disabled-msg" id="disabled-card" style="display:none">
-            <i class="fa-solid fa-lock" style="font-size:32px; margin-bottom:12px; display:block;"></i>
+        <div class="page-card page-disabled" id="disabled-card" style="display:none">
+            <i class="fa-solid fa-lock"></i>
             <p>成績開示は現在無効です。</p>
             <p style="margin-top:8px;font-size:13px">管理者が開示を有効にするまでお待ちください。</p>
         </div>
+
+        <div class="page-footer">Powered by QuizOpus</div>
     </div>
 
     <script src="js/disclosure.js"></script>

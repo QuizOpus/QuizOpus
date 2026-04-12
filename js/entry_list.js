@@ -17,19 +17,10 @@ const params = new URLSearchParams(location.search);
             }
         });
 
-        // 公開設定監視
-        db.ref(`projects/${projectId}/protected/${secretHash}/entryConfig/listEnabled`).on('value', snap => {
-            const isEnabled = snap.exists() && snap.val() === true;
-            if (isEnabled) {
-                document.getElementById('disabled-msg').style.display = 'none';
-                document.getElementById('content-area').style.display = 'block';
-                loadList();
-            } else {
-                document.getElementById('disabled-msg').style.display = 'block';
-                document.getElementById('content-area').style.display = 'none';
-                unsubscribeList();
-            }
-        });
+        // リストを常に表示
+        document.getElementById('disabled-msg').style.display = 'none';
+        document.getElementById('content-area').style.display = 'block';
+        loadList();
     }
 
     let listRef = null;

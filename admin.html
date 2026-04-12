@@ -123,18 +123,38 @@
             <button class="tab-btn active" onclick="switchTab('tab-sheet')"><i class="fa-solid fa-file-lines"></i> 回答用紙</button>
             <button class="tab-btn" onclick="switchTab('tab-scan')"><i class="fa-solid fa-camera"></i> 答案管理</button>
             <button class="tab-btn" onclick="switchTab('tab-model')"><i class="fa-solid fa-spell-check"></i> 模範解答</button>
-            <button class="tab-btn" onclick="switchTab('tab-stats')"><i class="fa-solid fa-chart-pie"></i> 集計・開示</button>
+            <button class="tab-btn" onclick="switchTab('tab-stats')"><i class="fa-solid fa-chart-pie"></i> 集計</button>
             <button class="tab-btn" onclick="switchTab('tab-settings')"><i class="fa-solid fa-wrench"></i> 設定</button>
         </div>
 
         <!-- ==================== TAB 0: 参加者管理 ==================== -->
         <div class="tab-content" id="tab-entries">
             <div class="section glass-panel">
-                <h2><i class="fa-solid fa-link"></i> 公開リンク・設定</h2>
-                <div class="toggle-row" style="margin-bottom:16px">
-                    <label class="toggle-switch"><input type="checkbox" id="entry-list-toggle" onchange="toggleEntryList()"><span class="toggle-slider"></span></label>
-                    <span>名簿の一般公開</span>
+                <h2><i class="fa-solid fa-clipboard-check"></i> エントリー受付設定</h2>
+                <div style="display:flex;flex-direction:column;gap:16px">
+                    <div class="toggle-row">
+                        <label class="toggle-switch"><input type="checkbox" id="entry-open-toggle" checked onchange="toggleEntryOpen()"><span class="toggle-slider"></span></label>
+                        <span>エントリーフォームの受付</span>
+                        <span id="entry-open-status" style="margin-left:auto;font-size:12px;font-weight:600;color:#34d399">受付中</span>
+                    </div>
+                    <div style="background:rgba(15,23,42,0.5);padding:14px 16px;border-radius:var(--radius-md);border:1px solid var(--glass-border)">
+                        <div style="font-size:12px;color:var(--text-muted);font-weight:600;margin-bottom:10px"><i class="fa-solid fa-clock"></i> 受付期間（任意）</div>
+                        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+                            <div style="flex:1;min-width:180px">
+                                <label style="font-size:11px;color:var(--text-muted)">開始</label>
+                                <input type="datetime-local" id="entry-period-start" onchange="saveEntryPeriod()" style="width:100%;margin-top:4px" />
+                            </div>
+                            <div style="flex:1;min-width:180px">
+                                <label style="font-size:11px;color:var(--text-muted)">終了</label>
+                                <input type="datetime-local" id="entry-period-end" onchange="saveEntryPeriod()" style="width:100%;margin-top:4px" />
+                            </div>
+                        </div>
+                        <div style="font-size:11px;color:var(--text-muted);margin-top:8px"><i class="fa-solid fa-circle-info"></i> 空欄の場合は制限なし。スイッチOFFの場合は期間に関わらず受付停止。</div>
+                    </div>
                 </div>
+            </div>
+            <div class="section glass-panel">
+                <h2><i class="fa-solid fa-link"></i> 公開リンク</h2>
                 <div style="background:rgba(15,23,42,0.5);padding:12px 16px;border-radius:var(--radius-md);border:1px solid var(--glass-border);display:flex;flex-direction:column;gap:10px">
                     <div class="link-row"><span class="link-label"><i class="fa-solid fa-pen-to-square"></i> エントリー</span><a id="registration-link" href="#" target="_blank" style="display:none"></a><button class="btn secondary" style="padding:6px 12px;font-size:12px" onclick="window.open(document.getElementById('registration-link').href)"><i class="fa-solid fa-arrow-up-right-from-square"></i></button><button class="btn secondary" style="padding:6px 12px;font-size:12px" onclick="copyUrl('registration-link', this)"><i class="fa-solid fa-copy"></i></button></div>
                     <div class="link-row"><span class="link-label"><i class="fa-solid fa-list"></i> 名簿</span><a id="entry-link" href="#" target="_blank" style="display:none"></a><button class="btn secondary" style="padding:6px 12px;font-size:12px" onclick="window.open(document.getElementById('entry-link').href)"><i class="fa-solid fa-arrow-up-right-from-square"></i></button><button class="btn secondary" style="padding:6px 12px;font-size:12px" onclick="copyUrl('entry-link', this)"><i class="fa-solid fa-copy"></i></button></div>
@@ -238,7 +258,7 @@
             </div>
         </div>
 
-        <!-- ==================== TAB 4: 集計・開示 ==================== -->
+        <!-- ==================== TAB 4: 集計 ==================== -->
         <div class="tab-content" id="tab-stats">
             <div class="section glass-panel">
                 <h2><i class="fa-solid fa-chart-bar"></i> 採点状況</h2>
