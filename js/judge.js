@@ -43,11 +43,11 @@ const projectId = session.projectId;
             // Firebaseのentriesから参加者情報を取得してマスタとして保持 (オプション)
             fetchEntriesMaster();
 
-            document.getElementById('scorer-badge').innerHTML =
-                `${scorerName}<br><span style="font-size:11px;color:var(--text-muted);font-weight:400">${scorerRole === 'admin' ? '管理者' : '採点者'}</span>`;
+            document.getElementById('dropdown-scorer-name').textContent = scorerName;
+            document.getElementById('dropdown-scorer-role').innerHTML = scorerRole === 'admin' ? '<i class="fa-solid fa-crown"></i> 管理者' : '<i class="fa-solid fa-user-check"></i> 採点者';
 
             if (scorerRole === 'admin') {
-                document.getElementById('admin-bar').style.display = 'inline-block';
+                document.getElementById('admin-menu-items').style.display = 'flex';
             }
 
             const qGrid = document.getElementById('q-grid');

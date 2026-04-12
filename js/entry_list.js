@@ -9,11 +9,21 @@ const params = new URLSearchParams(location.search);
     async function init() {
         if (!projectId) return;
 
+        // メニュー表示の初期化
+        if (session.scorerName) {
+            document.getElementById('menu-user-info').style.display = 'block';
+            document.getElementById('dropdown-scorer-name').textContent = session.scorerName;
+            document.getElementById('dropdown-scorer-role').innerHTML = session.scorerRole === 'admin' ? '<i class="fa-solid fa-crown"></i> 管理者' : '<i class="fa-solid fa-user-check"></i> 採点者';
+            if (session.scorerRole === 'admin') {
+                document.getElementById('admin-menu-items').style.display = 'flex';
+            }
+        }
+
         // 設定の購読
         db.ref(`projects/${projectId}/settings`).once('value', s => {
             if(s.exists()) {
                 const pName = s.val().projectName;
-                if(pName) document.getElementById('page-title').textContent = `${pName} - エントリーリスト`;
+                if(pName) document.getElementById('page-title').innerHTML = `<i class="fa-solid fa-clipboard-list"></i> ${pName} - リスト`;
             }
         });
 
@@ -87,6 +97,11 @@ const params = new URLSearchParams(location.search);
             }
             document.getElementById('total-count').textContent = count;
         });
+    }
+
+    function logout() {
+        session.clear();
+        location.href = 'index.html';
     }
 
     init();

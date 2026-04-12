@@ -267,6 +267,7 @@ i.icon-text { margin-right: 6px; }
 }
 .toggle-switch input:checked + .toggle-slider { background: rgba(59,130,246,0.3); border-color: var(--primary); }
 .toggle-switch input:checked + .toggle-slider::before { transform: translateX(22px); background: var(--primary); }
+.toggle-switch input::after { display: none !important; }
 .toggle-row {
   display: flex; align-items: center; gap: 12px; font-size: 14px; color: var(--text-main);
 }
@@ -329,10 +330,11 @@ input[type="checkbox"] {
   appearance: none; -webkit-appearance: none; -moz-appearance: none;
   width: 20px; height: 20px; flex-shrink: 0;
   background: rgba(15, 23, 42, 0.6);
-  border: 2px solid var(--glass-border);
+  border: 1.5px solid var(--glass-border);
   border-radius: 5px; cursor: pointer;
   position: relative; transition: all 0.2s;
   vertical-align: middle;
+  display: inline-flex; align-items: center; justify-content: center;
 }
 input[type="checkbox"]:hover {
   border-color: var(--primary);
@@ -343,12 +345,12 @@ input[type="checkbox"]:checked {
   border-color: var(--primary);
 }
 input[type="checkbox"]:checked::after {
-  content: '';
+  content: '\f00c';
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+  font-size: 11px;
+  color: white;
   position: absolute;
-  left: 5px; top: 1px;
-  width: 6px; height: 11px;
-  border: solid white; border-width: 0 2.5px 2.5px 0;
-  transform: rotate(45deg);
 }
 input[type="checkbox"]:focus-visible {
   box-shadow: 0 0 0 3px rgba(59,130,246,0.3);
@@ -381,32 +383,33 @@ input[type="number"]::-webkit-outer-spin-button {
   flex-direction: row !important;
   align-items: center !important;
   background: rgba(15,23,42,0.6);
-  border: 1px solid var(--input-border);
-  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--glass-border);
+  border-radius: var(--radius-md);
   overflow: hidden;
-  max-width: 130px;
-  height: 34px;
+  max-width: 160px;
+  height: 48px;
+  box-shadow: var(--shadow-sm);
 }
 .number-spinner-btn {
-  background: rgba(255,255,255,0.05);
+  background: rgba(255,255,255,0.03);
   border: none;
   color: var(--text-main);
-  width: 38px;
+  width: 48px;
   height: 100%;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   cursor: pointer;
   transition: all 0.2s;
-  font-size: 14px;
+  font-size: 16px;
   padding: 0;
 }
 .number-spinner-btn:hover {
-  background: rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.1);
   color: var(--primary);
 }
 .number-spinner-btn:active {
-  background: rgba(255,255,255,0.25);
+  background: rgba(59,130,246,0.2);
 }
 .number-spinner-wrap input[type="number"] {
   flex: 1;
@@ -415,8 +418,10 @@ input[type="number"]::-webkit-outer-spin-button {
   background: transparent !important;
   text-align: center;
   padding: 0 !important;
-  width: 50px;
+  width: 60px;
   height: 100%;
-  font-size: 14px;
+  font-size: 18px;
+  font-weight: 800;
   box-shadow: none !important;
+  color: var(--primary);
 }

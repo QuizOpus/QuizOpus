@@ -98,6 +98,13 @@ function showDbAuthError() {
                 document.execCommand('copy'); document.body.removeChild(ta);
             }
 
+            // メニュー表示の初期化
+            document.getElementById('dropdown-scorer-name').textContent = scorerName || '管理者';
+            document.getElementById('dropdown-scorer-role').innerHTML = scorerRole === 'admin' ? '<i class="fa-solid fa-crown"></i> 管理者' : '<i class="fa-solid fa-user-check"></i> 採点者';
+            if (scorerRole === 'admin') {
+                document.getElementById('admin-menu-items').style.display = 'flex';
+            }
+
             const configSnap = await db.ref(`projects/${projectId}/protected/${secretHash}/config`).once('value');
             if (configSnap.exists()) {
                 const cfg = configSnap.val();
@@ -287,63 +294,93 @@ function showDbAuthError() {
         let scanConfig = null, scanAnswers = [];
 
         async function loadAnswers() {
-            const file = document.getElementById('pdf-file').files[0];
-            if (!file) { showAdminToast('PDFを選択してください'); return; }
+            const fileInput = document.getElementById('pdf-file');
+            const file = fileInput.files[0];
+            if (!file) return;
+
             const snap = await db.ref(`projects/${projectId}/protected/${secretHash}/config`).get();
             if (!snap.exists()) { showAdminToast('座標設定が見つかりません。先に回答用紙を発行してください。'); return; }
             scanConfig = snap.val();
-            const arrayBuffer = await file.arrayBuffer();
-            let pdfDoc;
-            try { pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise; }
-            catch (e) { showAdminToast('PDFの読み込みに失敗: ' + e.message); return; }
-            const total = pdfDoc.numPages; scanAnswers = [];
-            document.getElementById('status-text').textContent = `0 / ${total} ページ処理中...`;
-            document.getElementById('progress-bar').style.width = '0%';
-            for (let pageNum = 1; pageNum <= total; pageNum++) {
-                const page = await pdfDoc.getPage(pageNum);
-                const viewport = page.getViewport({ scale: scanConfig.scale || 1.5 });
-                workCanvas.width = viewport.width; workCanvas.height = viewport.height;
-                workCtx.fillStyle = '#ffffff'; workCtx.fillRect(0, 0, workCanvas.width, workCanvas.height);
-                await page.render({ canvasContext: workCtx, viewport }).promise;
-                let detectedResult = detectTombo(scanConfig.tombo);
-                if (!detectedResult.error && detectedResult.markerMap[0] && detectedResult.markerMap[2]) {
-                    if (detectedResult.markerMap[0].y > detectedResult.markerMap[2].y) {
-                        const tc = document.createElement('canvas'); tc.width = workCanvas.width; tc.height = workCanvas.height;
-                        const tctx = tc.getContext('2d'); tctx.translate(tc.width, tc.height); tctx.rotate(Math.PI); tctx.drawImage(workCanvas, 0, 0);
-                        workCtx.clearRect(0, 0, workCanvas.width, workCanvas.height); workCtx.drawImage(tc, 0, 0);
-                        detectedResult = detectTombo(scanConfig.tombo);
+
+            const overlay = document.getElementById('save-overlay');
+            const overlayBar = document.getElementById('save-overlay-bar');
+            const overlayText = document.getElementById('save-overlay-text');
+            const overlayTitle = overlay.querySelector('h2');
+            overlay.style.display = 'flex';
+            overlayBar.style.width = '0%';
+            overlayTitle.textContent = '答案を読み込み中...';
+
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                let pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                const total = pdfDoc.numPages; scanAnswers = [];
+
+                for (let i = 1; i <= total; i++) {
+                    overlayText.textContent = `${i} / ${total} ページ読込中`;
+                    overlayBar.style.width = `${(i / total) * 50}%`;
+
+                    const page = await pdfDoc.getPage(i);
+                    const viewport = page.getViewport({ scale: scanConfig.scale || 1.8 });
+                    workCanvas.width = viewport.width; workCanvas.height = viewport.height;
+                    workCtx.fillStyle = '#ffffff'; workCtx.fillRect(0, 0, workCanvas.width, workCanvas.height);
+                    await page.render({ canvasContext: workCtx, viewport }).promise;
+
+                    let detectedResult = detectTombo(scanConfig.tombo);
+                    if (!detectedResult.error && detectedResult.markerMap[0] && detectedResult.markerMap[2]) {
+                        if (detectedResult.markerMap[0].y > detectedResult.markerMap[2].y) {
+                            const tc = document.createElement('canvas'); tc.width = workCanvas.width; tc.height = workCanvas.height;
+                            const tctx = tc.getContext('2d'); tctx.translate(tc.width, tc.height); tctx.rotate(Math.PI); tctx.drawImage(workCanvas, 0, 0);
+                            workCtx.clearRect(0, 0, workCanvas.width, workCanvas.height); workCtx.drawImage(tc, 0, 0);
+                            detectedResult = detectTombo(scanConfig.tombo);
+                        }
                     }
-                }
-                if (detectedResult.error) {
-                    const origData = workCtx.getImageData(0, 0, workCanvas.width, workCanvas.height);
-                    for (const angle of [Math.PI, Math.PI / 2, -Math.PI / 2]) {
-                        const tc = document.createElement('canvas');
-                        const isR = Math.abs(angle) === Math.PI / 2;
-                        tc.width = isR ? workCanvas.height : workCanvas.width; tc.height = isR ? workCanvas.width : workCanvas.height;
-                        const tctx = tc.getContext('2d'); tctx.translate(tc.width / 2, tc.height / 2); tctx.rotate(angle);
-                        tctx.drawImage(workCanvas, -workCanvas.width / 2, -workCanvas.height / 2);
-                        workCanvas.width = tc.width; workCanvas.height = tc.height; workCtx.drawImage(tc, 0, 0);
-                        const rr = detectTombo(scanConfig.tombo);
-                        if (!rr.error || rr.foundCount > detectedResult.foundCount) detectedResult = rr;
-                        if (!detectedResult.error) break;
-                        workCanvas.width = origData.width; workCanvas.height = origData.height; workCtx.putImageData(origData, 0, 0);
+                    if (detectedResult.error) {
+                        const origData = workCtx.getImageData(0, 0, workCanvas.width, workCanvas.height);
+                        for (const angle of [Math.PI, Math.PI / 2, -Math.PI / 2]) {
+                            const tc = document.createElement('canvas'); const isR = Math.abs(angle) === Math.PI / 2;
+                            tc.width = isR ? workCanvas.height : workCanvas.width; tc.height = isR ? workCanvas.width : workCanvas.height;
+                            const tctx = tc.getContext('2d'); tctx.translate(tc.width / 2, tc.height / 2); tctx.rotate(angle);
+                            tctx.drawImage(workCanvas, -workCanvas.width / 2, -workCanvas.height / 2);
+                            workCanvas.width = tc.width; workCanvas.height = tc.height; workCtx.drawImage(tc, 0, 0);
+                            const rr = detectTombo(scanConfig.tombo);
+                            if (!rr.error || rr.foundCount > detectedResult.foundCount) detectedResult = rr;
+                            if (!detectedResult.error) break;
+                            workCanvas.width = origData.width; workCanvas.height = origData.height; workCtx.putImageData(origData, 0, 0);
+                        }
                     }
+
+                    const transform = calcPerspectiveTransform(scanConfig.tombo.map(r => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 })), detectedResult.points);
+                    const entryNumber = readEntryNumber(scanConfig.markCells.map(cell => transformRegion(cell, transform)));
+                    const cells = [];
+                    for (let q = 0; q < (scanConfig.questionCount || 100); q++) {
+                        const cr = transformRegion(scanConfig.answerRegions[q], transform);
+                        cells.push({ q: q + 1, imageData: cutRegion(cr) });
+                    }
+                    scanAnswers.push({ page: i, entryNumber, cells, tomboError: detectedResult.error, pageImage: workCanvas.toDataURL('image/jpeg', 0.5) });
                 }
-                const refCenterPoints = scanConfig.tombo.map(r => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 }));
-                const transform = calcPerspectiveTransform(refCenterPoints, detectedResult.points);
-                const correctedMarkCells = scanConfig.markCells.map(cell => transformRegion(cell, transform));
-                const entryNumber = readEntryNumber(correctedMarkCells);
-                const cells = []; const qTotal = scanConfig.questionCount || 100;
-                for (let q = 0; q < qTotal; q++) {
-                    const cr = transformRegion(scanConfig.answerRegions[q], transform);
-                    cells.push({ q: q + 1, imageData: cutRegion(cr) });
+
+                overlayTitle.textContent = 'サーバーへ保存中...';
+                let current = 0; const totalBatch = scanAnswers.length;
+                for (const a of scanAnswers) {
+                    const data = {
+                        entryNumber: a.entryNumber, page: a.page, pageImage: a.pageImage,
+                        uploadedAt: firebase.database.ServerValue.TIMESTAMP,
+                        cells: a.cells.reduce((o, c) => { o[`q${c.q}`] = c.imageData; return o; }, {})
+                    };
+                    await db.ref(`projects/${projectId}/protected/${secretHash}/answers/${a.entryNumber}`).set(data);
+                    current++;
+                    overlayBar.style.width = `${50 + (current / totalBatch) * 50}%`;
+                    overlayText.textContent = `${current} / ${totalBatch} 件保存`;
                 }
-                scanAnswers.push({ page: pageNum, entryNumber, cells, tomboError: detectedResult.error, pageImage: workCanvas.toDataURL('image/jpeg', 0.5) });
-                document.getElementById('progress-bar').style.width = Math.round((pageNum / total) * 100) + '%';
-                document.getElementById('status-text').textContent = `${pageNum} / ${total} ページ処理中...`;
-            }
-            document.getElementById('status-text').textContent = `完了: ${total}ページ処理しました`;
-            showScanResults();
+
+                overlayText.textContent = '完了しました！';
+                setTimeout(() => { overlay.style.display = 'none'; }, 1000);
+                showAdminToast(`${scanAnswers.length}件の答案を処理しました`, 'success');
+                loadEntryList();
+            } catch (e) {
+                console.error(e); overlay.style.display = 'none';
+                showAdminToast('処理エラー: ' + e.message);
+            } finally { fileInput.value = ''; }
         }
 
         function detectTombo(refTombo) {
@@ -377,57 +414,7 @@ function showDbAuthError() {
         function getMeanDarkness(r) { const x = Math.round(Math.max(0, r.x)), y = Math.round(Math.max(0, r.y)), w = Math.max(1, Math.round(Math.min(r.w, workCanvas.width - x))), h = Math.max(1, Math.round(Math.min(r.h, workCanvas.height - y))); const d = workCtx.getImageData(x, y, w, h); let t = 0; for (let i = 0; i < d.data.length; i += 4)t += (255 - (d.data[i] + d.data[i + 1] + d.data[i + 2]) / 3); return t / (d.data.length / 4); }
         function cutRegion(r) { const x = Math.round(Math.max(0, r.x)), y = Math.round(Math.max(0, r.y)), w = Math.max(1, Math.round(Math.min(r.w, workCanvas.width - x))), h = Math.max(1, Math.round(Math.min(r.h, workCanvas.height - y))); const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(workCanvas, x, y, w, h, 0, 0, w, h); return c.toDataURL('image/jpeg', 0.7); }
 
-        function showScanResults() {
-            document.getElementById('result-section').style.display = 'block';
-            const list = document.getElementById('answer-list'); list.innerHTML = '';
-            let ok = 0, err = 0, warn = 0;
-            scanAnswers.forEach(a => {
-                const valid = a.entryNumber >= 1 && a.entryNumber <= 999;
-                if (valid && !a.tomboError) ok++; else if (!valid) err++; else warn++;
-                const item = document.createElement('div'); item.className = 'answer-item';
-                if (!valid || a.tomboError) item.style.background = a.tomboError ? '#3a2b00' : '#3a1b1b';
-                item.innerHTML = `<img src="${a.cells[0]?.imageData}" alt="1問目"/><span>P${a.page}</span><span>受付番号: <strong>${a.entryNumber}</strong></span>${a.tomboError ? '<span style="font-size:11px;color:#ff9800"><i class="fa-solid fa-triangle-exclamation"></i> トンボ検出失敗</span>' : ''}<span class="badge ${valid ? (a.tomboError ? 'warn' : 'ok') : 'error'}">${valid ? 'OK' : 'エラー'}</span>`;
-                list.appendChild(item);
-            });
-            let txt = `${ok}件OK / ${warn}件警告 / ${err}件エラー`;
-            if (warn > 0 || err > 0) txt += '  <i class="fa-solid fa-triangle-exclamation"></i> エラーのあるページは再スキャンを推奨';
-            document.getElementById('result-summary').textContent = txt;
-            if (err === 0) document.getElementById('save-btn').disabled = false;
-        }
 
-        async function saveToFirebase() {
-            document.getElementById('save-btn').disabled = true;
-            let current = 0;
-            const total = scanAnswers.length;
-            document.getElementById('status-text').textContent = '保存中...';
-            
-            const overlay = document.getElementById('save-overlay');
-            const overlayBar = document.getElementById('save-overlay-bar');
-            const overlayText = document.getElementById('save-overlay-text');
-            overlay.style.display = 'flex';
-            overlayBar.style.width = '0%';
-            overlayText.textContent = `0 / ${total} 件`;
-
-            for (const a of scanAnswers) {
-                const data = {
-                    entryNumber: a.entryNumber, page: a.page, pageImage: a.pageImage,
-                    uploadedAt: firebase.database.ServerValue.TIMESTAMP,
-                    cells: a.cells.reduce((o, c) => { o[`q${c.q}`] = c.imageData; return o; }, {})
-                };
-                await db.ref(`projects/${projectId}/protected/${secretHash}/answers/${a.entryNumber}`).set(data);
-                current++;
-                overlayBar.style.width = `${(current / total) * 100}%`;
-                overlayText.textContent = `${current} / ${total} 件`;
-            }
-
-            document.getElementById('status-text').textContent = '保存完了しました';
-            overlayText.textContent = '保存完了！';
-            setTimeout(() => {
-                overlay.style.display = 'none';
-            }, 800);
-            document.getElementById('save-btn').disabled = false;
-            loadEntryList();
-        }
 
         // 答案一覧
         let entryListData = [];
@@ -532,21 +519,72 @@ function showDbAuthError() {
         function updateStatsView() {
             let doneCount = 0, conflictCount = 0, confirmedCount = 0, allConfirmed = true;
             for (let q = 1; q <= totalQuestions; q++) {
-                const cs = Object.keys(scoresData[`__completed__q${q}`] || {}); const allDone = cs.length >= 3; let hasConflict = false, allResolved = true;
-                if (allDone) { entryNumbers.forEach(en => { const qs = scoresData[en]?.[`q${q}`] || {}; const v = Object.values(qs); const co = v.filter(x => x === 'correct').length, wr = v.filter(x => x === 'wrong').length, ho = v.filter(x => x === 'hold').length; if ((co > 0 && wr > 0) || ho > 0) { hasConflict = true; if (!scoresData[`__final__q${q}`]?.[en]) allResolved = false; } }); }
-                const fc = allDone && (!hasConflict || allResolved); const cell = document.getElementById(`po-${q}`); cell.className = 'po-cell';
-                if (fc) { cell.classList.add('confirmed'); confirmedCount++; } else if (hasConflict) { cell.classList.add('conflict'); conflictCount++; allConfirmed = false; }
-                else if (allDone) { cell.classList.add('done'); doneCount++; allConfirmed = false; } else if (cs.length > 0) { cell.classList.add('inprogress'); allConfirmed = false; } else { allConfirmed = false; }
+                const cs = Object.keys(scoresData[`__completed__q${q}`] || {}); 
+                const allDone = cs.length >= 3; 
+                let hasConflict = false, allResolved = true;
+                
+                if (allDone) { 
+                    entryNumbers.forEach(en => { 
+                        const qs = scoresData[en]?.[`q${q}`] || {}; 
+                        const v = Object.values(qs); 
+                        const co = v.filter(x => x === 'correct').length, 
+                              wr = v.filter(x => x === 'wrong').length, 
+                              ho = v.filter(x => x === 'hold').length; 
+                        if ((co > 0 && wr > 0) || ho > 0) { 
+                            hasConflict = true; 
+                            if (!scoresData[`__final__q${q}`]?.[en]) allResolved = false; 
+                        } 
+                    }); 
+                }
+                
+                const fc = allDone && (!hasConflict || allResolved); 
+                const cell = document.getElementById(`po-${q}`); 
+                if (!cell) continue;
+                cell.className = 'po-cell';
+                
+                let statusText = `第${q}問: `;
+                if (fc) { 
+                    cell.classList.add('confirmed'); 
+                    confirmedCount++; 
+                    statusText += '確定済み';
+                } else if (hasConflict) { 
+                    cell.classList.add('conflict'); 
+                    conflictCount++; 
+                    allConfirmed = false; 
+                    statusText += '要確認あり';
+                } else if (allDone) { 
+                    cell.classList.add('done'); 
+                    doneCount++; 
+                    allConfirmed = false; 
+                    statusText += '採点完了';
+                } else if (cs.length > 0) { 
+                    cell.classList.add('inprogress'); 
+                    allConfirmed = false; 
+                    statusText += '採点中';
+                } else { 
+                    allConfirmed = false; 
+                    statusText += '未着手';
+                }
+                cell.title = statusText;
             }
-            document.getElementById('stat-done').textContent = doneCount + confirmedCount; document.getElementById('stat-conflict').textContent = conflictCount; document.getElementById('stat-confirmed').textContent = confirmedCount;
-            const csvS = document.getElementById('csv-status'), csvB = document.getElementById('csv-btn');
-            if (allConfirmed && confirmedCount === totalQuestions) { csvS.textContent = '全問確定済み。CSV出力できます。'; csvS.className = 'csv-status ready'; csvB.disabled = false; }
-            else { csvS.textContent = `未確定の問題があります（確定済み: ${confirmedCount}/${totalQuestions}）`; csvS.className = 'csv-status notready'; csvB.disabled = true; }
-            renderAnalytics();
+            document.getElementById('stat-done').textContent = doneCount + confirmedCount; 
+            document.getElementById('stat-conflict').textContent = conflictCount; 
+            document.getElementById('stat-confirmed').textContent = confirmedCount;
             
-            // 開示データは常に自動連携
+            const csvS = document.getElementById('csv-status'), csvB = document.getElementById('csv-btn');
+            if (allConfirmed && confirmedCount === totalQuestions && totalQuestions > 0) { 
+                csvS.textContent = '全問確定済み。CSV出力できます。'; 
+                csvS.className = 'csv-status ready'; 
+                csvB.disabled = false; 
+            } else { 
+                csvS.textContent = `未確定の問題があります（確定済み: ${confirmedCount}/${totalQuestions}）`; 
+                csvS.className = 'csv-status notready'; 
+                csvB.disabled = true; 
+            }
+            renderAnalytics();
             generateDisclosure();
         }
+
 
         async function exportCSV() {
             const snap = await db.ref(`projects/${projectId}/entries`).get();
@@ -610,7 +648,7 @@ function showDbAuthError() {
             }
         }
 
-        window.adjustNumberInput = function(id, delta) {
+        window.adjustNumberInput = async function(id, delta) {
             const input = document.getElementById(id);
             if (!input) return;
             let val = parseInt(input.value) || 0;
@@ -623,6 +661,14 @@ function showDbAuthError() {
             
             const event = new Event('change', { bubbles: true });
             input.dispatchEvent(event);
+
+            // 問題数変更時はFirebaseにも同期
+            if (id === 'question-count') {
+                try {
+                    await db.ref(`projects/${projectId}/protected/${secretHash}/config/questionCount`).set(val);
+                    showAdminToast(`問題数を ${val} 問に変更しました`, 'success');
+                } catch(e) { console.error('問題数の同期失敗:', e); }
+            }
         };
         // ============================
         // 設定更新処理
@@ -839,6 +885,11 @@ function showDbAuthError() {
                 btn.textContent = originalText;
                 btn.disabled = false;
             }
+        }
+
+        function logout() {
+            session.clear();
+            location.href = 'index.html';
         }
 
         init();

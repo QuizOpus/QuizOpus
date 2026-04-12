@@ -37,13 +37,13 @@
         .stat-num { font-size: 32px; font-weight: 800; color: var(--primary); background: linear-gradient(135deg, #60a5fa, #3b82f6); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
         .stat-label { font-size: 11px; color: var(--text-muted); margin-top: 8px; font-weight: 600; text-transform: uppercase; }
 
-        .progress-overview { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
-        .po-cell { aspect-ratio: 1; border-radius: 4px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; font-size: 9px; color: var(--text-muted); font-weight: bold; border: 1px solid transparent; transition: all 0.2s; }
-        .po-cell:hover { transform: scale(1.1); z-index: 10; }
-        .po-cell.done { background: rgba(16,185,129,0.2); color: #34d399; border-color: rgba(16,185,129,0.4); }
-        .po-cell.conflict { background: rgba(245,158,11,0.2); color: #fbbf24; border-color: rgba(245,158,11,0.4); }
-        .po-cell.confirmed { background: rgba(59,130,246,0.2); color: #60a5fa; border-color: rgba(59,130,246,0.4); }
-        .po-cell.inprogress { background: rgba(148,163,184,0.2); color: #cbd5e1; border-color: rgba(148,163,184,0.4); }
+        .progress-overview { display: flex; flex-wrap: wrap; gap: 3px; background: rgba(0,0,0,0.2); padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--glass-border); justify-content: flex-start; }
+        .po-cell { width: 14px; height: 14px; border-radius: 2px; background: rgba(255,255,255,0.05); font-size: 0; border: 1px solid rgba(255,255,255,0.05); cursor: help; }
+        .po-cell.done { background: #0e4429; border-color: rgba(0,255,0,0.1); }
+        .po-cell.confirmed { background: #26a641; border-color: rgba(0,255,0,0.2); box-shadow: 0 0 4px rgba(38,166,65,0.4); }
+        .po-cell.conflict { background: #f85149; border-color: rgba(255,0,0,0.2); animation: pulse-red 2s infinite; }
+        .po-cell.inprogress { background: #003d6e; border-color: rgba(0,100,255,0.1); }
+        @keyframes pulse-red { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
         .answer-item { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: var(--radius-sm); background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); margin-bottom: 6px; font-size: 13px; }
         .ans-preview { width: 80px; height: 24px; object-fit: contain; cursor: pointer; border-radius: 3px; background: white; transition: transform 0.2s; }
@@ -70,9 +70,32 @@
         <div id="admin-toast" style="display:none; position:fixed; top:20px; left:50%; transform:translateX(-50%); z-index:10000; color:white; padding:12px 24px; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.3); font-size:14px; text-align:center;"></div>
 
         <div class="top-bar">
-            <button class="btn secondary" onclick="location.href='judge.html'"><i class="fa-solid fa-arrow-left"></i> 問題一覧</button>
             <h1><i class="fa-solid fa-gear"></i> 管理画面</h1>
-            <div class="id-copy-badge" id="project-id-display" title="クリックでコピー" onclick="navigator.clipboard.writeText(projectId).then(()=>{this.innerHTML='<i class=&quot;fa-solid fa-check&quot;></i> コピー済み';setTimeout(()=>this.innerHTML='<i class=&quot;fa-solid fa-copy&quot;></i> '+projectId,1500)})">
+            <div class="id-copy-badge" id="project-id-display" title="クリックでコピー" onclick="navigator.clipboard.writeText(projectId).then(()=>{this.innerHTML='<i class=&quot;fa-solid fa-check&quot;></i> コピー済み';setTimeout(()=>this.innerHTML='<i class=&quot;fa-solid fa-copy&quot;></i> '+projectId,1500)})"></div>
+            
+            <div class="admin-dropdown" id="global-menu-container" style="margin-left:auto">
+                <button class="btn secondary" onclick="document.getElementById('global-menu').classList.toggle('show')">
+                    <i class="fa-solid fa-bars"></i> メニュー
+                </button>
+                <div id="global-menu" class="dropdown-content">
+                    <div style="padding: 12px; border-bottom: 1px solid var(--glass-border); margin-bottom: 8px; text-align: center;">
+                        <div id="dropdown-scorer-name" style="font-weight: 800; color: var(--text-main); font-size: 15px; margin-bottom: 6px;"></div>
+                        <div id="dropdown-scorer-role" class="scorer-badge" style="display:inline-block; padding: 4px 12px;"></div>
+                    </div>
+                    <button class="btn secondary" onclick="location.href='judge.html'"><i class="fa-solid fa-list-check"></i> 問題一覧</button>
+                    <button class="btn secondary" onclick="location.href='entry.html?pid='+projectId"><i class="fa-solid fa-pen-to-square"></i> エントリーフォーム</button>
+                    <button class="btn secondary" onclick="location.href='entry_list.html?pid='+projectId"><i class="fa-solid fa-list"></i> エントリーリスト</button>
+                    <button class="btn secondary" onclick="location.href='checkin.html?pid='+projectId"><i class="fa-solid fa-qrcode"></i> 当日受付</button>
+                    
+                    <div id="admin-menu-items" style="display:flex; flex-direction:column; gap:4px; margin-top:8px; padding-top:8px; border-top:1px solid var(--glass-border)">
+                        <button class="btn secondary active" onclick="location.href='admin.html'"><i class="fa-solid fa-gauge"></i> 管理画面</button>
+                        <button class="btn danger" onclick="location.href='conflict.html'"><i class="fa-solid fa-triangle-exclamation"></i> 要確認</button>
+                    </div>
+
+                    <div style="margin-top:8px; padding-top:8px; border-top:1px solid var(--glass-border)">
+                        <button class="btn secondary" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> ログアウト</button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -142,36 +165,26 @@
         <!-- ==================== TAB 2: 答案管理 ==================== -->
         <div class="tab-content" id="tab-scan">
             <div class="section glass-panel">
-                <h2><i class="fa-solid fa-file-import"></i> 答案の読み込み</h2>
-                <div class="file-upload-zone" id="pdf-upload-zone" onclick="document.getElementById('pdf-file').click()">
-                    <i class="fa-solid fa-cloud-arrow-up"></i>
-                    <div class="file-label">クリックしてPDFファイルを選択</div>
-                    <div class="file-name" id="pdf-file-name"></div>
-                    <input type="file" id="pdf-file" accept="application/pdf" onchange="document.getElementById('pdf-file-name').textContent=this.files[0]?.name||'';document.getElementById('pdf-file-name').style.display=this.files[0]?'block':'none';document.getElementById('pdf-upload-zone').classList.toggle('active',!!this.files[0]);loadAnswers()" />
-                </div>
-                <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
-                    <button class="btn success" id="save-btn" disabled onclick="saveToFirebase()"><i class="fa-solid fa-floppy-disk"></i> 保存</button>
-                </div>
-                <div class="progress-bar-wrap">
-                    <div class="progress-bar-inner" id="progress-bar"></div>
-                </div>
-                <div id="status-text" style="font-size:13px;color:var(--text-muted);margin-bottom:12px"></div>
-                <div id="result-section" style="display:none">
-                    <div id="result-summary" style="font-size:14px;margin-bottom:12px"></div>
-                    <div id="answer-list"></div>
-                </div>
-            </div>
-            <div class="section glass-panel">
-                <h2><i class="fa-solid fa-database"></i> 保存済み答案</h2>
-                <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
-                    <button class="btn danger" id="batch-delete-btn" onclick="batchDelete()" disabled><i class="fa-solid fa-trash"></i> 選択を削除</button>
-                    <div class="toggle-row" style="margin-left:auto;">
-                        <label class="toggle-switch"><input type="checkbox" id="select-all-cb" onchange="toggleSelectAll()"><span class="toggle-slider"></span></label>
-                        <span style="font-size:13px;font-weight:600;color:var(--text-main);">全選択</span>
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+                    <h2><i class="fa-solid fa-camera"></i> 答案管理</h2>
+                    <div style="display:flex;gap:8px;align-items:center">
+                        <button class="btn danger" id="batch-delete-btn" onclick="batchDelete()" disabled><i class="fa-solid fa-trash"></i> 選択削除</button>
+                        <div class="toggle-row">
+                            <label class="toggle-switch"><input type="checkbox" id="select-all-cb" onchange="toggleSelectAll()"><span class="toggle-slider"></span></label>
+                            <span style="font-size:13px;font-weight:600;color:var(--text-muted);">全選択</span>
+                        </div>
                     </div>
                 </div>
+
+                <div class="file-upload-zone" id="pdf-upload-zone" onclick="document.getElementById('pdf-file').click()" style="margin-bottom:20px; border-style:dashed;">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <div class="file-label">PDFをアップロードして一括スキャン＆保存</div>
+                    <div class="file-name" id="pdf-file-name"></div>
+                    <input type="file" id="pdf-file" accept="application/pdf" onchange="document.getElementById('pdf-file-name').textContent=this.files[0]?.name||'';loadAnswers()" />
+                </div>
+
                 <div id="entry-list">
-                    <div style="color:var(--text-muted);font-size:14px;text-align:center;padding:20px">読み込み中...</div>
+                    <div style="color:var(--text-muted);font-size:14px;text-align:center;padding:40px">読み込み中...</div>
                 </div>
             </div>
         </div>
