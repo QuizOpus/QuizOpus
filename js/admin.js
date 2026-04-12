@@ -112,8 +112,14 @@ function showDbAuthError() {
                 const isOpen = ec.entryOpen !== false; // default true
                 document.getElementById('entry-open-toggle').checked = isOpen;
                 updateEntryOpenStatus(isOpen);
-                if (ec.periodStart) document.getElementById('entry-period-start').value = ec.periodStart;
-                if (ec.periodEnd) document.getElementById('entry-period-end').value = ec.periodEnd;
+                if (ec.periodStart) {
+                    document.getElementById('entry-period-start').value = ec.periodStart;
+                    document.getElementById('dt-start-display').textContent = formatDtDisplay(ec.periodStart);
+                }
+                if (ec.periodEnd) {
+                    document.getElementById('entry-period-end').value = ec.periodEnd;
+                    document.getElementById('dt-end-display').textContent = formatDtDisplay(ec.periodEnd);
+                }
             }
 
             // 集計用: 問題セル初期化
@@ -628,7 +634,7 @@ function showDbAuthError() {
         // TAB 4: 集計・設定
         // ============================
         function updateStatsView() {
-            let doneCount = 0, conflictCount = 0, confirmedCount = 0, allConfirmed = true;
+            let doneCount = 0, conflictCount = 0, confirmedCount = 0, inprogressCount = 0, untouchedCount = 0, allConfirmed = true;
             for (let q = 1; q <= totalQuestions; q++) {
                 const cs = Object.keys(scoresData[`__completed__q${q}`] || {}); 
                 const allDone = cs.length >= 3; 
@@ -640,7 +646,6 @@ function showDbAuthError() {
                         const v = Object.values(qs); 
                         const co = v.filter(x => x === 'correct').length, 
                               wr = v.filter(x => x === 'wrong').length; 
-                        // 3票一致以外はコンフリクト
                         if (co !== 3 && wr !== 3) { 
                             hasConflict = true; 
                             if (!scoresData[`__final__q${q}`]?.[en]) allResolved = false; 
@@ -655,32 +660,42 @@ function showDbAuthError() {
                 
                 let statusText = `第${q}問: `;
                 if (fc) { 
-                    cell.classList.add('confirmed'); 
-                    confirmedCount++; 
-                    statusText += '確定済み';
+                    cell.classList.add('confirmed'); confirmedCount++; statusText += '確定済み';
                 } else if (hasConflict) { 
-                    cell.classList.add('conflict'); 
-                    conflictCount++; 
-                    allConfirmed = false; 
-                    statusText += '要確認あり';
+                    cell.classList.add('conflict'); conflictCount++; allConfirmed = false; statusText += '要確認あり';
                 } else if (allDone) { 
-                    cell.classList.add('done'); 
-                    doneCount++; 
-                    allConfirmed = false; 
-                    statusText += '採点完了';
+                    cell.classList.add('done'); doneCount++; allConfirmed = false; statusText += '採点完了';
                 } else if (cs.length > 0) { 
-                    cell.classList.add('inprogress'); 
-                    allConfirmed = false; 
-                    statusText += '採点中';
+                    cell.classList.add('inprogress'); inprogressCount++; allConfirmed = false; statusText += '採点中';
                 } else { 
-                    allConfirmed = false; 
-                    statusText += '未着手';
+                    untouchedCount++; allConfirmed = false; statusText += '未着手';
                 }
                 cell.title = statusText;
             }
             document.getElementById('stat-done').textContent = doneCount + confirmedCount; 
             document.getElementById('stat-conflict').textContent = conflictCount; 
             document.getElementById('stat-confirmed').textContent = confirmedCount;
+            
+            // Progress bar
+            const bar = document.getElementById('stats-bar');
+            const t = totalQuestions || 1;
+            const pct = (n) => ((n / t) * 100).toFixed(1) + '%';
+            bar.innerHTML = '';
+            const segs = [
+                { cls: 'confirmed', count: confirmedCount, label: `${confirmedCount}` },
+                { cls: 'done', count: doneCount, label: `${doneCount}` },
+                { cls: 'conflict', count: conflictCount, label: `${conflictCount}` },
+                { cls: 'inprogress', count: inprogressCount, label: `${inprogressCount}` },
+                { cls: 'untouched', count: untouchedCount, label: `${untouchedCount}` },
+            ];
+            segs.forEach(s => {
+                if (s.count === 0) return;
+                const seg = document.createElement('div');
+                seg.className = `stats-bar-seg ${s.cls}`;
+                seg.style.width = pct(s.count);
+                if (s.count / t >= 0.08) seg.textContent = s.label;
+                bar.appendChild(seg);
+            });
             
             const csvS = document.getElementById('csv-status'), csvB = document.getElementById('csv-btn');
             if (allConfirmed && confirmedCount === totalQuestions && totalQuestions > 0) { 
@@ -849,6 +864,135 @@ function showDbAuthError() {
             await db.ref(`projects/${projectId}/protected/${secretHash}/entryConfig`).update({ periodStart: start, periodEnd: end });
             await db.ref(`projects/${projectId}/publicSettings`).update({ periodStart: start, periodEnd: end });
             showAdminToast('受付期間を保存しました', 'success');
+        }
+
+        // ============================
+        // Custom DateTime Picker
+        // ============================
+        let dtTarget = null; // 'start' or 'end'
+        let dtYear, dtMonth, dtDay, dtHour = 0, dtMin = 0;
+
+        function formatDtDisplay(val) {
+            if (!val) return '未設定';
+            const d = new Date(val);
+            const mm = d.getMonth() + 1, dd = d.getDate();
+            const hh = String(d.getHours()).padStart(2, '0');
+            const mi = String(d.getMinutes()).padStart(2, '0');
+            return `${d.getFullYear()}/${mm}/${dd} ${hh}:${mi}`;
+        }
+
+        function openDatePicker(target) {
+            dtTarget = target;
+            const existing = document.getElementById(`entry-period-${target}`).value;
+            const now = existing ? new Date(existing) : new Date();
+            dtYear = now.getFullYear(); dtMonth = now.getMonth();
+            dtDay = now.getDate();
+            dtHour = now.getHours(); dtMin = now.getMinutes();
+
+            // populate hour/min selectors
+            const hSel = document.getElementById('dt-picker-hour');
+            const mSel = document.getElementById('dt-picker-min');
+            hSel.innerHTML = ''; mSel.innerHTML = '';
+            for (let h = 0; h < 24; h++) {
+                const o = document.createElement('option'); o.value = h;
+                o.textContent = String(h).padStart(2, '0');
+                if (h === dtHour) o.selected = true;
+                hSel.appendChild(o);
+            }
+            for (let m = 0; m < 60; m += 5) {
+                const o = document.createElement('option'); o.value = m;
+                o.textContent = String(m).padStart(2, '0');
+                if (m <= dtMin && m + 5 > dtMin) o.selected = true;
+                mSel.appendChild(o);
+            }
+
+            renderDtDays();
+
+            // Position
+            const trigger = document.getElementById(`dt-${target}-trigger`);
+            const rect = trigger.getBoundingClientRect();
+            const picker = document.getElementById('dt-picker');
+            picker.style.top = (rect.bottom + 8) + 'px';
+            picker.style.left = Math.min(rect.left, window.innerWidth - 320) + 'px';
+            picker.style.display = 'block';
+            document.getElementById('dt-picker-overlay').style.display = 'block';
+        }
+
+        function closeDatePicker() {
+            document.getElementById('dt-picker').style.display = 'none';
+            document.getElementById('dt-picker-overlay').style.display = 'none';
+        }
+
+        function dtNavMonth(delta) {
+            dtMonth += delta;
+            if (dtMonth < 0) { dtMonth = 11; dtYear--; }
+            if (dtMonth > 11) { dtMonth = 0; dtYear++; }
+            renderDtDays();
+        }
+
+        function renderDtDays() {
+            const months = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+            document.getElementById('dt-picker-month').textContent = `${dtYear}年 ${months[dtMonth]}`;
+
+            const container = document.getElementById('dt-picker-days');
+            container.innerHTML = '';
+
+            const firstDay = new Date(dtYear, dtMonth, 1).getDay();
+            const daysInMonth = new Date(dtYear, dtMonth + 1, 0).getDate();
+            const prevDays = new Date(dtYear, dtMonth, 0).getDate();
+            const today = new Date();
+
+            // Previous month padding
+            for (let i = firstDay - 1; i >= 0; i--) {
+                const btn = document.createElement('button');
+                btn.type = 'button'; btn.className = 'dt-day other';
+                btn.textContent = prevDays - i;
+                container.appendChild(btn);
+            }
+            // Current month
+            for (let d = 1; d <= daysInMonth; d++) {
+                const btn = document.createElement('button');
+                btn.type = 'button'; btn.className = 'dt-day';
+                btn.textContent = d;
+                if (d === dtDay && dtMonth === today.getMonth() && dtYear === today.getFullYear() && d === today.getDate()) {
+                    btn.classList.add('today');
+                } else if (d === today.getDate() && dtMonth === today.getMonth() && dtYear === today.getFullYear()) {
+                    btn.classList.add('today');
+                }
+                if (d === dtDay) btn.classList.add('selected');
+                btn.onclick = () => { dtDay = d; renderDtDays(); };
+                container.appendChild(btn);
+            }
+            // Next month padding
+            const totalCells = firstDay + daysInMonth;
+            const remaining = (7 - totalCells % 7) % 7;
+            for (let i = 1; i <= remaining; i++) {
+                const btn = document.createElement('button');
+                btn.type = 'button'; btn.className = 'dt-day other';
+                btn.textContent = i;
+                container.appendChild(btn);
+            }
+        }
+
+        function dtConfirm() {
+            dtHour = parseInt(document.getElementById('dt-picker-hour').value);
+            dtMin = parseInt(document.getElementById('dt-picker-min').value);
+            const d = new Date(dtYear, dtMonth, dtDay, dtHour, dtMin);
+            // Format as datetime-local value
+            const pad = n => String(n).padStart(2, '0');
+            const val = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            
+            document.getElementById(`entry-period-${dtTarget}`).value = val;
+            document.getElementById(`dt-${dtTarget}-display`).textContent = formatDtDisplay(val);
+            closeDatePicker();
+            saveEntryPeriod();
+        }
+
+        function dtClear() {
+            document.getElementById(`entry-period-${dtTarget}`).value = '';
+            document.getElementById(`dt-${dtTarget}-display`).textContent = '未設定';
+            closeDatePicker();
+            saveEntryPeriod();
         }
 
         async function loadAdminEntries() {

@@ -12,13 +12,12 @@ const params = new URLSearchParams(location.search);
         // プロジェクト名を取得して表示
         try {
             const settingsSnap = await db.ref(`projects/${projectId}/publicSettings/projectName`).once('value');
-            if (settingsSnap.exists()) {
-                const pName = settingsSnap.val();
-                document.getElementById('logo-title').textContent = pName;
-                document.getElementById('logo-subtitle').textContent = '成績開示';
-                document.title = pName + ' - 成績開示';
-            }
-        } catch(e) {}
+            const pName = settingsSnap.exists() ? settingsSnap.val() : '成績開示';
+            document.getElementById('logo-title').textContent = pName;
+            document.title = pName + ' - 成績開示';
+        } catch(e) {
+            document.getElementById('logo-title').textContent = '成績開示';
+        }
     }
 
     async function checkDisclosure() {

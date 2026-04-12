@@ -133,9 +133,8 @@ const params = new URLSearchParams(location.search);
                 const snap = await db.ref(`projects/${projectId}/publicSettings`).once('value');
                 if (snap.exists()) {
                     const settings = snap.val();
-                    const pName = settings.projectName || '大会エントリー';
+                    const pName = settings.projectName || 'エントリー';
                     document.getElementById('project-title').textContent = pName;
-                    document.getElementById('project-subtitle').textContent = '参加登録フォーム';
                     document.title = pName + ' - エントリー';
 
                     // エントリー受付チェック

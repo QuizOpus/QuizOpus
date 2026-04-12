@@ -12,13 +12,12 @@ const params = new URLSearchParams(location.search);
         // プロジェクト名を取得して表示
         try {
             const s = await db.ref(`projects/${projectId}/publicSettings/projectName`).once('value');
-            if (s.exists()) {
-                const pName = s.val();
-                document.getElementById('page-title').textContent = pName;
-                document.getElementById('page-subtitle').textContent = 'エントリーリスト';
-                document.title = pName + ' - エントリーリスト';
-            }
-        } catch(e) {}
+            const pName = s.exists() ? s.val() : 'エントリーリスト';
+            document.getElementById('page-title').textContent = pName;
+            document.title = pName + ' - エントリーリスト';
+        } catch(e) {
+            document.getElementById('page-title').textContent = 'エントリーリスト';
+        }
 
         // リストを常に表示
         document.getElementById('disabled-msg').style.display = 'none';

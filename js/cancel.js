@@ -15,13 +15,12 @@ const params = new URLSearchParams(location.search);
         if (!projectId) return;
         try {
             const snap = await db.ref(`projects/${projectId}/publicSettings/projectName`).once('value');
-            if (snap.exists()) {
-                const pName = snap.val();
-                document.getElementById('cancel-title').textContent = pName;
-                document.getElementById('cancel-subtitle').textContent = 'エントリーキャンセル';
-                document.title = pName + ' - キャンセル';
-            }
-        } catch(e) {}
+            const pName = snap.exists() ? snap.val() : 'キャンセル';
+            document.getElementById('cancel-title').textContent = pName;
+            document.title = pName + ' - キャンセル';
+        } catch(e) {
+            document.getElementById('cancel-title').textContent = 'キャンセル';
+        }
     })();
 
     function showStatus(msg, type) {
