@@ -39,13 +39,13 @@
             margin-top: 16px; width: 100%;
             padding: 20px; border-radius: var(--radius-lg);
             text-align: center; font-size: 18px; display: none;
-            font-weight: 600;
+            font-weight: 600; transition: all 0.35s var(--smooth);
         }
-        #result.success { background: rgba(16,185,129,0.15); border: 2px solid rgba(16,185,129,0.5); color: #34d399; }
-        #result.error { background: rgba(239,68,68,0.15); border: 2px solid rgba(239,68,68,0.5); color: #f87171; }
-        #result.already { background: rgba(245,158,11,0.15); border: 2px solid rgba(245,158,11,0.5); color: #fbbf24; }
-        #result.canceled { background: rgba(239,68,68,0.15); border: 2px solid rgba(239,68,68,0.5); color: #f87171; }
-        #result.loading { background: rgba(59,130,246,0.15); border: 2px solid rgba(59,130,246,0.5); color: #60a5fa; }
+        #result.success { background: rgba(16,185,129,0.12); border: 2px solid rgba(16,185,129,0.4); color: #34d399; }
+        #result.error { background: rgba(239,68,68,0.12); border: 2px solid rgba(239,68,68,0.4); color: #f87171; }
+        #result.already { background: rgba(245,158,11,0.12); border: 2px solid rgba(245,158,11,0.4); color: #fbbf24; }
+        #result.canceled { background: rgba(239,68,68,0.12); border: 2px solid rgba(239,68,68,0.4); color: #f87171; }
+        #result.loading { background: rgba(59,130,246,0.12); border: 2px solid rgba(59,130,246,0.4); color: #60a5fa; }
         .name { font-size: 28px; font-weight: 800; margin: 10px 0; color: var(--text-main); }
         .number { font-size: 16px; color: var(--text-muted); }
 
@@ -56,7 +56,9 @@
         .stats-row { display: flex; justify-content: space-around; gap: 16px; }
         .stat-item {
             text-align: center; flex: 1; padding: 16px;
+            transition: transform 0.4s var(--spring);
         }
+        .stat-item:hover { transform: translateY(-2px); }
         .stat-item .stat-num { font-size: 28px; font-weight: 800; }
         .stat-item .stat-label { font-size: 12px; color: var(--text-muted); margin-top: 4px; font-weight: 600; }
     </style>

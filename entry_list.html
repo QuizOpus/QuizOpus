@@ -30,21 +30,23 @@
         .list-container {
             border-radius: var(--radius-lg); overflow: hidden;
             border: 1px solid var(--glass-border);
-            background: rgba(15, 23, 42, 0.4);
+            background: rgba(15, 23, 42, 0.35);
+            backdrop-filter: blur(8px);
         }
         table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
         th {
-            background: rgba(30, 41, 59, 0.8); color: var(--text-muted);
+            background: linear-gradient(180deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.7));
+            color: var(--text-muted);
             font-weight: 600; padding: 14px 16px; text-transform: uppercase;
             letter-spacing: 0.05em; font-size: 11px;
-            border-bottom: 1px solid var(--glass-border);
+            border-bottom: 1px solid rgba(59, 130, 246, 0.1);
         }
         td {
-            padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.04);
             vertical-align: middle;
         }
-        tbody tr { transition: background 0.15s; }
-        tbody tr:hover { background: rgba(255,255,255,0.03); }
+        tbody tr { transition: background 0.25s var(--smooth); }
+        tbody tr:hover { background: rgba(59, 130, 246, 0.06); }
 
         .c-time { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
         .c-name { font-size: 16px; font-weight: 700; }
@@ -54,11 +56,11 @@
         @media (max-width: 600px) {
             table, thead, tbody, th, td, tr { display: block; }
             thead tr { display: none; }
-            tr { padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+            tr { padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.08); }
             td { padding: 4px 0; border: none; }
             .c-time { margin-bottom: 6px; }
             .c-affil, .c-grade { display: inline-block; margin-right: 8px; font-size: 13px; }
-            .c-msg { margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.1); }
+            .c-msg { margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.08); }
         }
     </style>
 </head>
