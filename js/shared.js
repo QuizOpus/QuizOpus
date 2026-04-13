@@ -140,3 +140,61 @@ function requireAuth(opts = {}) {
     }
     return { projectId, secretHash, scorerName, scorerRole };
 }
+
+/**
+ * 統一トースト通知
+ * @param {string} msg - 表示メッセージ
+ * @param {'success'|'error'|'info'} [type='info'] - 通知タイプ
+ * @param {number} [duration=3000] - 表示時間(ms)
+ */
+function showToast(msg, type = 'info', duration = 3000) {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+    }
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    const icons = { success: 'fa-circle-check', error: 'fa-circle-xmark', info: 'fa-circle-info' };
+    toast.innerHTML = `<i class="fa-solid ${icons[type] || icons.info}"></i><span>${msg}</span>`;
+    container.appendChild(toast);
+    // Trigger animation
+    requestAnimationFrame(() => toast.classList.add('show'));
+    setTimeout(() => {
+        toast.classList.remove('show');
+        toast.classList.add('hide');
+        toast.addEventListener('transitionend', () => toast.remove());
+    }, duration);
+}
+
+/**
+ * 統一確認ダイアログ
+ * @param {string} message - 確認メッセージ
+ * @param {string} [confirmText='削除する'] - 確認ボタンテキスト
+ * @returns {Promise<boolean>}
+ */
+function showConfirm(message, confirmText = '削除する') {
+    return new Promise(resolve => {
+        const overlay = document.createElement('div');
+        overlay.className = 'confirm-overlay';
+
+        overlay.innerHTML = `
+            <div class="confirm-dialog glass-panel">
+                <i class="fa-solid fa-triangle-exclamation confirm-icon"></i>
+                <div class="confirm-message">${message}</div>
+                <div class="confirm-actions">
+                    <button class="btn secondary confirm-cancel">キャンセル</button>
+                    <button class="btn danger confirm-ok">${confirmText}</button>
+                </div>
+            </div>
+        `;
+
+        overlay.querySelector('.confirm-cancel').onclick = () => { overlay.remove(); resolve(false); };
+        overlay.querySelector('.confirm-ok').onclick = () => { overlay.remove(); resolve(true); };
+        overlay.addEventListener('click', e => { if (e.target === overlay) { overlay.remove(); resolve(false); } });
+        document.body.appendChild(overlay);
+        overlay.querySelector('.confirm-ok').focus();
+    });
+}

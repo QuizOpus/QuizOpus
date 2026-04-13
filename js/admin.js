@@ -1,45 +1,9 @@
 
+        // showAdminToast は shared.js の showToast に委譲
         function showAdminToast(msg, type = 'error') {
-            const t = document.getElementById('admin-toast');
-            if(!t) return;
-            t.innerHTML = msg;
-            t.style.background = type === 'error' ? '#ef5350' : '#4caf50';
-            t.style.display = 'block';
-            setTimeout(() => t.style.display = 'none', 3000);
+            showToast(msg, type);
         }
-
-        function showConfirm(message, confirmText = '削除する') {
-            return new Promise(resolve => {
-                const overlay = document.createElement('div');
-                overlay.style.position = 'fixed'; overlay.style.top = '0'; overlay.style.left = '0'; overlay.style.right = '0'; overlay.style.bottom = '0';
-                overlay.style.backgroundColor = 'rgba(15,23,42,0.8)'; overlay.style.zIndex = '10000';
-                overlay.style.display = 'flex'; overlay.style.alignItems = 'center'; overlay.style.justifyContent = 'center'; overlay.style.backdropFilter = 'blur(4px)';
-
-                const modal = document.createElement('div');
-                modal.className = 'glass-panel'; modal.style.width = '90%'; modal.style.maxWidth = '360px'; modal.style.padding = '24px'; modal.style.textAlign = 'center';
-
-                const icon = document.createElement('i');
-                icon.className = 'fa-solid fa-triangle-exclamation'; icon.style.color = '#ef4444'; icon.style.fontSize = '32px'; icon.style.marginBottom = '16px'; icon.style.display = 'block';
-
-                const text = document.createElement('div');
-                text.style.marginBottom = '24px'; text.style.fontSize = '15px'; text.style.fontWeight = '600'; text.textContent = message;
-
-                const btns = document.createElement('div');
-                btns.style.display = 'flex'; btns.style.gap = '12px';
-
-                const btnCancel = document.createElement('button');
-                btnCancel.className = 'btn secondary'; btnCancel.textContent = 'キャンセル'; btnCancel.style.flex = '1';
-                btnCancel.onclick = () => { overlay.remove(); resolve(false); };
-
-                const btnOk = document.createElement('button');
-                btnOk.className = 'btn danger'; btnOk.textContent = confirmText; btnOk.style.flex = '1';
-                btnOk.onclick = () => { overlay.remove(); resolve(true); };
-
-                btns.appendChild(btnCancel); btns.appendChild(btnOk);
-                modal.appendChild(icon); modal.appendChild(text); modal.appendChild(btns);
-                overlay.appendChild(modal); document.body.appendChild(overlay);
-            });
-        }
+        // showConfirm は shared.js で定義済み
 
         // ============================
         // 共通初期化
@@ -69,7 +33,9 @@
         let entryNumbers = [];
         let modelAnswers = [];
 
-        // タブ切り替え
+        // タブ切り替え（遅延ロード対応）
+        const tabLoaded = { 'tab-entries': false, 'tab-prep': false, 'tab-scan': false, 'tab-stats': false, 'tab-settings': false };
+
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -77,6 +43,23 @@
             const btns = document.querySelectorAll('.tab-btn');
             const tabs = ['tab-entries', 'tab-prep', 'tab-scan', 'tab-stats', 'tab-settings'];
             btns[tabs.indexOf(tabId)]?.classList.add('active');
+
+            // 遅延ロード: 初回表示時のみデータ取得
+            if (!tabLoaded[tabId]) {
+                tabLoaded[tabId] = true;
+                switch (tabId) {
+                    case 'tab-entries':
+                        loadAdminEntries();
+                        break;
+                    case 'tab-scan':
+                        loadEntryList();
+                        break;
+                    case 'tab-stats':
+                        // スコアリスナーが既に動いているので updateStatsView を呼ぶだけ
+                        updateStatsView();
+                        break;
+                }
+            }
         }
 
         async function init() {
@@ -84,9 +67,13 @@
             const hash = location.hash.replace('#', '');
             if (hash && document.getElementById(hash)) {
                 switchTab(hash);
+            } else {
+                // デフォルトタブ (参加者) を遅延ロード
+                tabLoaded['tab-entries'] = true;
+                loadAdminEntries();
             }
 
-            // プロジェクトアクセス日時更新とデータクリーンアップ
+            // プロジェクトアクセス日時更新とデータクリーンアップ（非同期、awaitなし）
             db.ref(`projects/${projectId}/lastAccess`).set(firebase.database.ServerValue.TIMESTAMP);
             purgeOldImages();
 
@@ -124,21 +111,20 @@
                 document.execCommand('copy'); document.body.removeChild(ta);
             }
 
-
+            // 設定データ読み込み（軽量なので即時）
             const configSnap = await db.ref(`projects/${projectId}/protected/${secretHash}/config`).once('value');
             if (configSnap.exists()) {
                 const cfg = configSnap.val();
                 totalQuestions = cfg.questionCount || 100;
                 document.getElementById('question-count').value = totalQuestions;
             } else {
-                // 初期値として100問を保存
                 await db.ref(`projects/${projectId}/protected/${secretHash}/config`).set({ questionCount: 100 });
             }
 
             const entryConfigSnap = await db.ref(`projects/${projectId}/protected/${secretHash}/entryConfig`).once('value');
             if (entryConfigSnap.exists()) {
                 const ec = entryConfigSnap.val();
-                const isOpen = ec.entryOpen !== false; // default true
+                const isOpen = ec.entryOpen !== false;
                 document.getElementById('entry-open-toggle').checked = isOpen;
                 if (ec.periodStart) {
                     document.getElementById('entry-period-start').value = ec.periodStart;
@@ -151,7 +137,6 @@
                 updateEntryOpenStatus();
             }
 
-            // 統計用: 総問題数
             document.getElementById('stat-total').textContent = totalQuestions;
 
             // エントリ番号取得（REST API shallowでキーのみ高速取得）
@@ -163,19 +148,17 @@
                 console.error('エントリ番号取得エラー:', e);
             }
 
-            // スコアリアルタイム
+            // スコアリアルタイムリスナー（バックグラウンドで常時稼働）
             db.ref(`projects/${projectId}/protected/${secretHash}/scores`).on('value', snap => {
                 scoresData = snap.val() || {};
-                updateStatsView();
+                // 集計タブが表示中の場合のみ更新
+                if (document.getElementById('tab-stats')?.classList.contains('active')) {
+                    updateStatsView();
+                }
             });
 
-            // 模範解答・参加者・答案を並列読み込み
+            // 模範解答はオンデマンド → prep/模範解答タブで初回ロード
             const modelPromise = db.ref(`projects/${projectId}/protected/${secretHash}/answers_text`).get();
-
-            // 参加者と答案リストは非同期で並列実行（await不要）
-            loadAdminEntries();
-            loadEntryList();
-
             const modelSnap = await modelPromise;
             modelAnswers = new Array(totalQuestions).fill('');
             if (modelSnap.exists()) {
@@ -381,7 +364,7 @@
                         const cr = transformRegion(scanConfig.answerRegions[q], transform);
                         cells.push({ q: q + 1, imageData: cutRegion(cr) });
                     }
-                    scanAnswers.push({ page: i, entryNumber, cells, tomboError: detectedResult.error, pageImage: workCanvas.toDataURL('image/jpeg', 0.5) });
+                    scanAnswers.push({ page: i, entryNumber, cells, tomboError: detectedResult.error, pageImage: workCanvas.toDataURL('image/webp', 0.5) });
                 }
 
                 overlayTitle.textContent = 'サーバーへ保存中...';
@@ -438,7 +421,7 @@
         function transformRegion(r, t) { const tl = transformPoint(r.x, r.y, t), br = transformPoint(r.x + r.w, r.y + r.h, t); return { x: tl.x, y: tl.y, w: br.x - tl.x, h: br.y - tl.y, row: r.row, col: r.col }; }
         function readEntryNumber(markCells) { const rows = [[], [], []]; markCells.forEach(c => { if (c.row === undefined) return; rows[c.row].push({ col: c.col, darkness: getMeanDarkness(c) }); }); return rows.map(r => { if (!r.length) return 0; return [...r].sort((a, b) => b.darkness - a.darkness)[0].col; }).reduce((a, d, i) => a + d * Math.pow(10, 2 - i), 0); }
         function getMeanDarkness(r) { const x = Math.round(Math.max(0, r.x)), y = Math.round(Math.max(0, r.y)), w = Math.max(1, Math.round(Math.min(r.w, workCanvas.width - x))), h = Math.max(1, Math.round(Math.min(r.h, workCanvas.height - y))); const d = workCtx.getImageData(x, y, w, h); let t = 0; for (let i = 0; i < d.data.length; i += 4)t += (255 - (d.data[i] + d.data[i + 1] + d.data[i + 2]) / 3); return t / (d.data.length / 4); }
-        function cutRegion(r) { const x = Math.round(Math.max(0, r.x)), y = Math.round(Math.max(0, r.y)), w = Math.max(1, Math.round(Math.min(r.w, workCanvas.width - x))), h = Math.max(1, Math.round(Math.min(r.h, workCanvas.height - y))); const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(workCanvas, x, y, w, h, 0, 0, w, h); return c.toDataURL('image/jpeg', 0.7); }
+        function cutRegion(r) { const x = Math.round(Math.max(0, r.x)), y = Math.round(Math.max(0, r.y)), w = Math.max(1, Math.round(Math.min(r.w, workCanvas.width - x))), h = Math.max(1, Math.round(Math.min(r.h, workCanvas.height - y))); const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(workCanvas, x, y, w, h, 0, 0, w, h); return c.toDataURL('image/webp', 0.7); }
 
 
 
@@ -873,24 +856,24 @@
 
             if (!isOpen) {
                 el.textContent = '停止中';
-                el.style.cssText = 'padding:4px 12px;border-radius:9999px;font-size:12px;font-weight:700;background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3)';
+                el.className = 'status-badge closed';
                 return;
             }
 
             const now = new Date();
             if (ps && new Date(ps) > now) {
                 el.textContent = '期間外（開始前）';
-                el.style.cssText = 'padding:4px 12px;border-radius:9999px;font-size:12px;font-weight:700;background:rgba(251,191,36,0.15);color:#fbbf24;border:1px solid rgba(251,191,36,0.3)';
+                el.className = 'status-badge pending';
                 return;
             }
             if (pe && new Date(pe) < now) {
                 el.textContent = '期間外（終了済）';
-                el.style.cssText = 'padding:4px 12px;border-radius:9999px;font-size:12px;font-weight:700;background:rgba(251,191,36,0.15);color:#fbbf24;border:1px solid rgba(251,191,36,0.3)';
+                el.className = 'status-badge pending';
                 return;
             }
 
             el.textContent = '受付中';
-            el.style.cssText = 'padding:4px 12px;border-radius:9999px;font-size:12px;font-weight:700;background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.3)';
+            el.className = 'status-badge open';
         }
 
         async function saveEntryPeriod() {
