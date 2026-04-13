@@ -638,26 +638,53 @@
                 // ドラッグ開始
                 item.addEventListener('dragstart', e => {
                     dragSrcIdx = i;
-                    item.style.opacity = '0.4';
                     e.dataTransfer.effectAllowed = 'move';
+                    setTimeout(() => item.classList.add('dragging'), 0);
                 });
-                item.addEventListener('dragend', () => { item.style.opacity = '1'; });
-
-                // ドロップ先
-                item.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; item.style.borderColor = 'var(--primary)'; });
-                item.addEventListener('dragleave', () => { item.style.borderColor = ''; });
-                item.addEventListener('drop', async e => {
-                    e.preventDefault();
+                item.addEventListener('dragend', async () => { 
+                    item.classList.remove('dragging');
                     item.style.borderColor = '';
-                    if (dragSrcIdx === null || dragSrcIdx === i) return;
-                    // 配列内の要素を移動
-                    const moved = modelAnswers.splice(dragSrcIdx, 1)[0];
-                    modelAnswers.splice(i, 0, moved);
-                    dragSrcIdx = null;
-                    renderModelGrid();
-                    await saveModelAnswers();
-                    showAdminToast('並び替えを保存しました', 'success');
+                    
+                    // Rebuild array from current DOM order to persist changes
+                    const newAnswers = [];
+                    grid.querySelectorAll('.model-cell').forEach(cell => {
+                        const originalIdx = parseInt(cell.dataset.idx, 10);
+                        newAnswers.push(modelAnswers[originalIdx]);
+                    });
+                    
+                    let changed = false;
+                    for (let j = 0; j < modelAnswers.length; j++) {
+                        if (modelAnswers[j] !== newAnswers[j]) changed = true;
+                    }
+
+                    if (changed) {
+                        modelAnswers.splice(0, modelAnswers.length, ...newAnswers);
+                        renderModelGrid(); // Re-render to fix the # numbers
+                        await saveModelAnswers();
+                        showAdminToast('並び替えを保存しました', 'success');
+                    } else {
+                        renderModelGrid(); // reset DOM
+                    }
                 });
+
+                // ドロップ先へのドラッグ中の動的並び替え (Live sorting)
+                item.addEventListener('dragenter', e => {
+                    e.preventDefault();
+                    const draggingItem = grid.querySelector('.dragging');
+                    if (draggingItem && draggingItem !== item) {
+                        const allItems = [...grid.querySelectorAll('.model-cell')];
+                        const currPos = allItems.indexOf(draggingItem);
+                        const tgtPos = allItems.indexOf(item);
+                        if (currPos < tgtPos) {
+                            item.after(draggingItem);
+                        } else {
+                            grid.insertBefore(draggingItem, item);
+                        }
+                    }
+                });
+                item.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; });
+                // drop時の固有処理はdragendに統合したため不要
+                item.addEventListener('drop', e => e.preventDefault());
 
                 // クリックで編集
                 item.addEventListener('click', () => {
