@@ -17,51 +17,7 @@
     <script src="js/shared.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="css/design_system.css">
-    <style>
-
-        .main-content { margin-top: 70px; padding: 24px 40px; max-width: 1200px; margin-left: auto; margin-right: auto; display: grid; gap: 32px; grid-template-columns: 1fr; }
-        @media(min-width: 900px) { .main-content { grid-template-columns: 1fr 1fr; } }
-
-        #camera-container { position: relative; width: 100%; }
-        #video {
-            width: 100%; border-radius: var(--radius-lg);
-            border: 2px solid var(--glass-border); background: #000;
-            transform: scaleX(-1);
-        }
-        #canvas { display: none; }
-
-        #scanning-text {
-            margin-top: 12px; color: var(--text-muted); font-size: 14px;
-            text-align: center; font-weight: 600;
-        }
-
-        #result {
-            margin-top: 16px; width: 100%;
-            padding: 20px; border-radius: var(--radius-lg);
-            text-align: center; font-size: 18px; display: none;
-            font-weight: 600; transition: all 0.35s var(--smooth);
-        }
-        #result.success { background: rgba(16,185,129,0.12); border: 2px solid rgba(16,185,129,0.4); color: #34d399; }
-        #result.error { background: rgba(239,68,68,0.12); border: 2px solid rgba(239,68,68,0.4); color: #f87171; }
-        #result.already { background: rgba(245,158,11,0.12); border: 2px solid rgba(245,158,11,0.4); color: #fbbf24; }
-        #result.canceled { background: rgba(239,68,68,0.12); border: 2px solid rgba(239,68,68,0.4); color: #f87171; }
-        #result.loading { background: rgba(59,130,246,0.12); border: 2px solid rgba(59,130,246,0.4); color: #60a5fa; }
-        .name { font-size: 28px; font-weight: 800; margin: 10px 0; color: var(--text-main); }
-        .number { font-size: 16px; color: var(--text-muted); }
-
-        .stats-bar {
-            margin-top: 24px; width: 100%;
-        }
-        .stats-bar h3 { font-size: 14px; color: var(--text-muted); margin-bottom: 12px; font-weight: 600; text-transform: uppercase; }
-        .stats-row { display: flex; justify-content: space-around; gap: 16px; }
-        .stat-item {
-            text-align: center; flex: 1; padding: 16px;
-            transition: transform 0.4s var(--spring);
-        }
-        .stat-item:hover { transform: translateY(-2px); }
-        .stat-item .stat-num { font-size: 28px; font-weight: 800; }
-        .stat-item .stat-label { font-size: 12px; color: var(--text-muted); margin-top: 4px; font-weight: 600; }
-    </style>
+    <link rel="stylesheet" href="css/pages.css">
 </head>
 <body>
     <div class="fixed-header">

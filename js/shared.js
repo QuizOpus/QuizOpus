@@ -375,9 +375,10 @@ async function showPreview(projectId, secretHash, entryNum) {
             <h2><i class="fa-solid fa-file-image"></i> ${name} の解答用紙</h2>
             <button class="preview-close" onclick="document.getElementById('preview-overlay').style.display='none'">✕ 閉じる</button>
         </div>
-        <div id="preview-content" style="text-align:center">
-            <div style="color:#aaa"><i class="fa-solid fa-spinner fa-spin"></i> 読み込み中...</div>
+        <div id="preview-content" class="preview-overlay-content">
+            <div class="text-muted-loader"><i class="fa-solid fa-spinner fa-spin"></i> 読み込み中...</div>
         </div>`;
+
     overlay.style.display = 'block';
 
     const answerData = await dbGet(`projects/${projectId}/protected/${secretHash}/answers/${entryNum}`);
@@ -385,9 +386,9 @@ async function showPreview(projectId, secretHash, entryNum) {
     // Storage URL 優先、旧 Base64 フォールバック
     const imageUrl = answerData?.pageImageUrl || answerData?.pageImage;
     if (imageUrl) {
-        pc.innerHTML = `<img src="${imageUrl}" alt="${name}" style="max-width:100%;max-height:85vh;border-radius:8px;background:white;box-shadow:0 4px 24px rgba(0,0,0,0.5)">`;
+        pc.innerHTML = `<img src="${imageUrl}" alt="${name}" class="preview-image">`;
     } else {
-        pc.innerHTML = '<div style="color:#aaa;padding:40px">ページ画像が保存されていません。管理画面から答案を再読み込みしてください。</div>';
+        pc.innerHTML = '<div class="text-muted-center">ページ画像が保存されていません。管理画面から答案を再読み込みしてください。</div>';
     }
 }
 
@@ -431,7 +432,7 @@ function requireAuth(opts = {}) {
         return null;
     }
     if (opts.requireAdmin && scorerRole !== 'admin') {
-        document.body.innerHTML = '<div style="padding:40px;text-align:center;color:#f87171;font-weight:bold;">管理者としてプロジェクトに入室してください。3秒後にトップページへ戻ります。</div>';
+        document.body.innerHTML = '<div class="auth-redirect">管理者としてプロジェクトに入室してください。3秒後にトップページへ戻ります。</div>';
         setTimeout(() => location.href = 'index.html', 3000);
         return null;
     }
@@ -626,7 +627,7 @@ function renderSkeleton(container, rows = 5) {
     container.innerHTML = Array.from({ length: rows }, () => `
         <div class="skeleton-row">
             <div class="skeleton skeleton-avatar"></div>
-            <div style="flex:1">
+            <div class="confirm-body">
                 <div class="skeleton skeleton-text"></div>
                 <div class="skeleton skeleton-text short"></div>
             </div>
@@ -735,14 +736,14 @@ class TourGuide {
             const stepNum = this.currentStep + 1;
             const total = this.steps.length;
             this._tooltip.innerHTML = `
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-                    <span style="background:rgba(59,130,246,0.15);color:#60a5fa;font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;">${stepNum} / ${total}</span>
+                <div class="tour-step-header">
+                    <span class="tour-step-badge">${stepNum} / ${total}</span>
                 </div>
-                <div style="font-size:15px;font-weight:700;margin-bottom:6px;">${step.title}</div>
-                <div style="font-size:13px;color:#94a3b8;line-height:1.6;margin-bottom:16px;">${step.text}</div>
-                <div style="display:flex;gap:8px;justify-content:flex-end;">
-                    <button class="tour-skip" style="padding:8px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#94a3b8;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">スキップ</button>
-                    <button class="tour-next" style="padding:8px 20px;border-radius:8px;border:none;background:#3b82f6;color:white;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">${stepNum === total ? '完了' : '次へ →'}</button>
+                <div class="tour-step-title">${step.title}</div>
+                <div class="tour-step-text">${step.text}</div>
+                <div class="tour-step-actions">
+                    <button class="tour-skip">スキップ</button>
+                    <button class="tour-next">${stepNum === total ? '完了' : '次へ →'}</button>
                 </div>
             `;
 

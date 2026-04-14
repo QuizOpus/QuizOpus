@@ -9,54 +9,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="css/design_system.css">
-    <style>
-        body {
-            display: flex; align-items: center; justify-content: center;
-            min-height: 100vh; padding: 20px; text-align: center;
-        }
-        .error-container {
-            max-width: 480px;
-            animation: fadeSlideUp 0.7s var(--smooth);
-        }
-        @keyframes fadeSlideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .error-code {
-            font-size: 120px; font-weight: 800; line-height: 1;
-            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
-            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-            margin-bottom: 8px; animation: float 3s ease-in-out infinite;
-            filter: drop-shadow(0 4px 12px rgba(99, 102, 241, 0.25));
-        }
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-        .error-title {
-            font-size: 22px; font-weight: 700; margin-bottom: 12px;
-        }
-        .error-desc {
-            color: var(--text-muted); font-size: 14px; line-height: 1.7;
-            margin-bottom: 32px;
-        }
-        .error-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-        .error-actions .btn { width: auto; padding: 12px 24px; font-size: 14px; }
-        .btn.ghost {
-            background: transparent; border: 1px solid var(--glass-border);
-            color: var(--text-main); backdrop-filter: blur(8px);
-        }
-        .btn.ghost::after { display: none; }
-        .btn.ghost:hover {
-            background: rgba(255,255,255,0.06); border-color: var(--glass-border-hover);
-            transform: translateY(-1px);
-        }
-        .decoration {
-            font-size: 64px; margin-bottom: 24px; opacity: 0.12;
-        }
-    </style>
+    <link rel="stylesheet" href="css/pages.css">
 </head>
-<body>
+<body class="page-404">
     <div class="error-container">
         <div class="decoration"><i class="fa-solid fa-ghost"></i></div>
         <div class="error-code">404</div>
