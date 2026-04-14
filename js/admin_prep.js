@@ -218,24 +218,22 @@
                             // ページ全体画像
                             console.log(`[Upload] Entry ${a.entryNumber}: ページ画像アップロード開始 (${(a.pageImage.length / 1024).toFixed(0)}KB)`);
                             const pageRef = storage.ref(`projects/${projectId}/answers/${a.entryNumber}/pageImage`);
-                            const pageSnap = await Promise.race([
-                                pageRef.putString(a.pageImage, 'data_url'),
-                                new Promise((_, reject) => setTimeout(() => reject(new Error('ページ画像アップロードが30秒でタイムアウト')), 30000))
-                            ]);
-                            console.log(`[Upload] Entry ${a.entryNumber}: ページ画像完了、URL取得中...`);
+                            const pageSnap = await pageRef.putString(a.pageImage, 'data_url');
                             pageImageUrl = await pageSnap.ref.getDownloadURL();
-                            console.log(`[Upload] Entry ${a.entryNumber}: URL取得完了`);
 
-                            // セル画像（各問題）
-                            for (const c of a.cells) {
-                                const cellRef = storage.ref(`projects/${projectId}/answers/${a.entryNumber}/cells/q${c.q}`);
-                                const cellSnap = await Promise.race([
-                                    cellRef.putString(c.imageData, 'data_url'),
-                                    new Promise((_, reject) => setTimeout(() => reject(new Error(`q${c.q}アップロードが30秒でタイムアウト`)), 30000))
-                                ]);
-                                cellUrls[`q${c.q}`] = await cellSnap.ref.getDownloadURL();
+                            // セル画像（並列バッチアップロード — 10同時）
+                            const BATCH_SIZE = 10;
+                            for (let batchStart = 0; batchStart < a.cells.length; batchStart += BATCH_SIZE) {
+                                const batch = a.cells.slice(batchStart, batchStart + BATCH_SIZE);
+                                const results = await Promise.all(batch.map(async c => {
+                                    const cellRef = storage.ref(`projects/${projectId}/answers/${a.entryNumber}/cells/q${c.q}`);
+                                    const cellSnap = await cellRef.putString(c.imageData, 'data_url');
+                                    const url = await cellSnap.ref.getDownloadURL();
+                                    return { key: `q${c.q}`, url };
+                                }));
+                                results.forEach(r => { cellUrls[r.key] = r.url; });
                             }
-                            console.log(`[Upload] Entry ${a.entryNumber}: 全セル完了`);
+                            console.log(`[Upload] Entry ${a.entryNumber}: 完了`);
                         } catch (e) {
                             console.error('Storage upload error:', e);
                             showAdminToast(`受付番号 ${a.entryNumber}: 画像アップロード失敗 — Firebase Storage を有効にしてください`, 'error');
