@@ -34,36 +34,20 @@ const currentQ = parseInt(localStorage.getItem('current_q') || '1');
                 return;
             }
 
-            // ページ画像キャッシュ（同じURLを何度もDLしない）
-            const pageImageCache = new Map();
-            async function loadPageImage(url) {
-                if (pageImageCache.has(url)) return pageImageCache.get(url);
-                const p = new Promise((resolve, reject) => {
-                    const img = new Image(); img.crossOrigin = 'anonymous';
-                    img.onload = () => resolve(img); img.onerror = reject;
-                    img.src = url;
-                });
-                pageImageCache.set(url, p);
-                return p;
-            }
-
             // 現在の設問の画像のみを並列取得 (REST)
             const fetchPromises = entryNumbers.map(async (entryNum) => {
                 const cellData = await dbGet(`projects/${projectId}/protected/${secretHash}/answers/${entryNum}`);
                 if (!answers[entryNum]) answers[entryNum] = { cells: {} };
 
-                // 新方式: ページ画像からcanvasクロップ（画像はキャッシュ済み）
+                // 新方式: CSSクロップ（CORS不要・canvas不要）
                 const region = cellData?.cellRegions?.[`q${currentQ}`];
-                if (region && cellData?.pageImageUrl) {
-                    try {
-                        const img = await loadPageImage(cellData.pageImageUrl);
-                        const c = document.createElement('canvas');
-                        c.width = region.w; c.height = region.h;
-                        c.getContext('2d').drawImage(img, region.x, region.y, region.w, region.h, 0, 0, region.w, region.h);
-                        answers[entryNum].cells[`q${currentQ}`] = c.toDataURL('image/webp', 0.8);
-                    } catch (e) {
-                        console.warn(`Entry ${entryNum}: セルクロップ失敗`, e);
-                    }
+                if (region && cellData?.pageImageUrl && cellData?.pageWidth) {
+                    answers[entryNum].cells[`q${currentQ}`] = {
+                        type: 'crop',
+                        url: cellData.pageImageUrl,
+                        x: region.x, y: region.y, w: region.w, h: region.h,
+                        pageW: cellData.pageWidth
+                    };
                 } else {
                     // 旧方式フォールバック: cellUrls または Base64
                     const cellUrl = cellData?.cellUrls?.[`q${currentQ}`] || cellData?.cells?.[`q${currentQ}`];
@@ -151,10 +135,24 @@ const currentQ = parseInt(localStorage.getItem('current_q') || '1');
 
                     const card = document.createElement('div');
                     card.className = `answer-card ${myScore === 'correct' ? 'correct' : myScore === 'wrong' ? 'wrong' : myScore === 'hold' ? 'hold' : ''} ${idx === selectedIndex ? 'selected' : ''}`;
-                    card.innerHTML = `
-              <img src="${imageData || ''}" alt="${displayName}" loading="lazy" />
-              <div class="entry-num">${displayName}</div>
-            `;
+
+                    // CSSクロップ方式 vs 旧方式(データURL)
+                    let imgHtml;
+                    if (imageData?.type === 'crop') {
+                        // パーセント計算: 画像幅 = pageW/w*100%、マージン = -座標/w*100%
+                        // margin-top の %はコンテナ幅基準なので正しくスケールする
+                        const pctW = imageData.pageW / imageData.w * 100;
+                        const pctML = -imageData.x / imageData.w * 100;
+                        const pctMT = -imageData.y / imageData.w * 100;
+                        imgHtml = `<div style="width:100%;height:60px;overflow:hidden;background:white;border-radius:4px">
+                            <img src="${imageData.url}" alt="${displayName}" loading="lazy"
+                                 style="display:block;width:${pctW}%;margin-left:${pctML}%;margin-top:${pctMT}%" />
+                        </div>`;
+                    } else {
+                        imgHtml = `<img src="${imageData || ''}" alt="${displayName}" loading="lazy" />`;
+                    }
+
+                    card.innerHTML = `${imgHtml}<div class="entry-num">${displayName}</div>`;
                     card.addEventListener('click', () => selectCard(idx));
                     card.addEventListener('dblclick', () => showPreview(projectId, secretHash, entryNum));
                     grid.appendChild(card);

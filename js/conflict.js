@@ -60,32 +60,17 @@ const { projectId, secretHash } = auth;
                 });
             }
 
-            // ページ画像キャッシュ
-            const pageImageCache = new Map();
-            async function loadPageImage(url) {
-                if (pageImageCache.has(url)) return pageImageCache.get(url);
-                const p = new Promise((resolve, reject) => {
-                    const img = new Image(); img.crossOrigin = 'anonymous';
-                    img.onload = () => resolve(img); img.onerror = reject;
-                    img.src = url;
-                });
-                pageImageCache.set(url, p);
-                return p;
-            }
-
             const promises = conflicts.map(async c => {
                 if (!answersData[c.entryNum]) answersData[c.entryNum] = { cells: {} };
                 if (answersData[c.entryNum].cells[`q${c.q}`] === undefined) {
                     const ansData = await dbGet(`projects/${projectId}/protected/${secretHash}/answers/${c.entryNum}`);
                     const region = ansData?.cellRegions?.[`q${c.q}`];
-                    if (region && ansData?.pageImageUrl) {
-                        try {
-                            const img = await loadPageImage(ansData.pageImageUrl);
-                            const cv = document.createElement('canvas');
-                            cv.width = region.w; cv.height = region.h;
-                            cv.getContext('2d').drawImage(img, region.x, region.y, region.w, region.h, 0, 0, region.w, region.h);
-                            answersData[c.entryNum].cells[`q${c.q}`] = cv.toDataURL('image/webp', 0.8);
-                        } catch (e) { answersData[c.entryNum].cells[`q${c.q}`] = null; }
+                    if (region && ansData?.pageImageUrl && ansData?.pageWidth) {
+                        answersData[c.entryNum].cells[`q${c.q}`] = {
+                            type: 'crop', url: ansData.pageImageUrl,
+                            x: region.x, y: region.y, w: region.w, h: region.h,
+                            pageW: ansData.pageWidth
+                        };
                     } else {
                         const cellUrl = ansData?.cellUrls?.[`q${c.q}`] || ansData?.cells?.[`q${c.q}`] || null;
                         answersData[c.entryNum].cells[`q${c.q}`] = cellUrl;
@@ -133,8 +118,21 @@ const { projectId, secretHash } = auth;
                     return '';
                 }).join(' ');
 
+                // CSSクロップ方式 vs 旧方式
+                let imgHtml;
+                if (imageData?.type === 'crop') {
+                    const pctW = imageData.pageW / imageData.w * 100;
+                    const pctML = -imageData.x / imageData.w * 100;
+                    const pctMT = -imageData.y / imageData.w * 100;
+                    imgHtml = `<div style="width:100%;height:60px;overflow:hidden;background:white;border-radius:4px">
+                        <img src="${imageData.url}" alt="${displayName} ${q}問" loading="lazy"
+                             style="display:block;width:${pctW}%;margin-left:${pctML}%;margin-top:${pctMT}%" />
+                    </div>`;
+                } else {
+                    imgHtml = `<img src="${imageData || ''}" alt="${displayName} ${q}問" loading="lazy" />`;
+                }
                 card.innerHTML = `
-                  <img src="${imageData || ''}" alt="${displayName} ${q}問" loading="lazy" />
+                  ${imgHtml}
                   <div class="q-tag-badge">${q}問</div>
                   ${modelAnswer ? `<div class="model-ans-badge" title="${modelAnswer}">${modelAnswer}</div>` : ''}
                   <div class="entry-num">${displayName}</div>

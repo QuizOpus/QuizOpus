@@ -202,7 +202,7 @@
                         const cr = transformRegion(scanConfig.answerRegions[q], transform);
                         cellRegions[`q${q + 1}`] = { x: Math.round(cr.x), y: Math.round(cr.y), w: Math.round(cr.w), h: Math.round(cr.h) };
                     }
-                    scanAnswers.push({ page: i, entryNumber, cellRegions, tomboError: detectedResult.error, pageImage: workCanvas.toDataURL('image/webp', 0.5) });
+                    scanAnswers.push({ page: i, entryNumber, cellRegions, tomboError: detectedResult.error, pageImage: workCanvas.toDataURL('image/webp', 0.5), pageWidth: workCanvas.width });
                 }
 
                 overlayTitle.textContent = 'サーバーへ保存中...';
@@ -230,7 +230,8 @@
                             page: a.page,
                             uploadedAt: SERVER_TIMESTAMP,
                             pageImageUrl: pageImageUrl,
-                            cellRegions: a.cellRegions
+                            cellRegions: a.cellRegions,
+                            pageWidth: a.pageWidth
                         };
                         await dbSet(`projects/${projectId}/protected/${secretHash}/answers/${a.entryNumber}`, data);
                     } catch (e) {
