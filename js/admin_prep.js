@@ -193,6 +193,11 @@
                         }
                     }
 
+                    console.log('DEBUG scanConfig keys:', Object.keys(scanConfig));
+                    console.log('DEBUG tombo:', scanConfig.tombo);
+                    console.log('DEBUG markCells:', scanConfig.markCells);
+                    console.log('DEBUG answerRegions:', scanConfig.answerRegions);
+                    console.log('DEBUG detectedResult:', detectedResult);
                     const transform = calcPerspectiveTransform(scanConfig.tombo.map(r => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 })), detectedResult.points);
                     const entryNumber = readEntryNumber(scanConfig.markCells.map(cell => transformRegion(cell, transform)));
                     const cells = [];
