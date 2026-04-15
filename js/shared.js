@@ -172,6 +172,34 @@ class Poller {
 }
 
 // ============================================
+//  接続管理 — タブ非表示時に自動切断（接続数節約）
+// ============================================
+(function() {
+    if (typeof firebase === 'undefined' || !firebase.database) return;
+    const db = firebase.database();
+    let idleTimer = null;
+    const IDLE_TIMEOUT = 10 * 60 * 1000; // 10分
+
+    function resetIdleTimer() {
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(() => {
+            if (document.hidden) db.goOffline();
+        }, IDLE_TIMEOUT);
+    }
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            // タブが非表示 → 10分後に切断
+            resetIdleTimer();
+        } else {
+            // タブが表示 → 即座に再接続
+            clearTimeout(idleTimer);
+            db.goOnline();
+        }
+    });
+})();
+
+// ============================================
 //  共通UIユーティリティ
 // ============================================
 
@@ -379,6 +407,56 @@ function showConfirm(message, confirmText = '削除する') {
         document.body.appendChild(overlay);
         overlay.querySelector('.confirm-ok').focus();
     });
+}
+
+/**
+ * フィードバック送信モーダル
+ */
+function openFeedback() {
+    const overlay = document.createElement('div');
+    overlay.className = 'confirm-overlay';
+    overlay.innerHTML = `
+        <div class="confirm-dialog" style="max-width:420px;">
+            <h3 style="margin:0 0 16px;font-size:16px;"><i class="fa-solid fa-comment-dots"></i> フィードバック</h3>
+            <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">バグ報告・改善提案・ご意見をお聞かせください</p>
+            <select id="fb-type" style="width:100%;padding:8px 12px;margin-bottom:10px;border-radius:var(--radius-md);background:var(--bg-secondary);color:var(--text-main);border:1px solid var(--glass-border);font-size:13px;">
+                <option value="bug">🐛 バグ報告</option>
+                <option value="feature">💡 機能リクエスト</option>
+                <option value="ux">🎨 UI/UX改善</option>
+                <option value="other">📝 その他</option>
+            </select>
+            <textarea id="fb-text" rows="5" placeholder="詳細を記入..." style="width:100%;padding:10px 12px;border-radius:var(--radius-md);background:var(--bg-secondary);color:var(--text-main);border:1px solid var(--glass-border);font-size:13px;resize:vertical;font-family:var(--font-family);"></textarea>
+            <div class="confirm-actions" style="margin-top:14px;">
+                <button class="btn secondary fb-cancel">キャンセル</button>
+                <button class="btn fb-send"><i class="fa-solid fa-paper-plane"></i> 送信</button>
+            </div>
+        </div>
+    `;
+    overlay.querySelector('.fb-cancel').onclick = () => overlay.remove();
+    overlay.querySelector('.fb-send').onclick = async () => {
+        const type = overlay.querySelector('#fb-type').value;
+        const text = overlay.querySelector('#fb-text').value.trim();
+        if (!text) { showToast('内容を入力してください', 'error'); return; }
+        try {
+            const fbData = {
+                type, text,
+                page: location.pathname.split('/').pop(),
+                projectId: session.projectId || '',
+                scorer: session.scorerName || '',
+                role: session.scorerRole || '',
+                timestamp: Date.now(),
+                userAgent: navigator.userAgent
+            };
+            await dbRef('feedback').push(fbData);
+            overlay.remove();
+            showToast('フィードバックを送信しました。ありがとうございます！', 'success');
+        } catch(e) {
+            showToast('送信に失敗しました: ' + e.message, 'error');
+        }
+    };
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    document.body.appendChild(overlay);
+    overlay.querySelector('#fb-text').focus();
 }
 
 // ============================================

@@ -1,46 +1,4 @@
 // admin_settings.js — プロジェクト設定・エクスポート・削除・オンボーディング
-        async function openDeleteModal() {
-            const pName = document.getElementById('setting-project-name')?.value || projectId;
-            const confirmed = await showConfirm(
-                `プロジェクト「${pName}」を本当に削除しますか？\n\nすべてのエントリー・答案・スコアが失われます。\nこの操作は元に戻せません。`,
-                '削除する'
-            );
-            if (!confirmed) return;
-            try {
-                // Storage の画像も全削除（再帰）
-                if (storage) {
-                    try {
-                        async function deleteStorageFolder(ref) {
-                            const list = await ref.listAll();
-                            for (const item of list.items) { await item.delete().catch(() => {}); }
-                            for (const prefix of list.prefixes) { await deleteStorageFolder(prefix); }
-                        }
-                        await deleteStorageFolder(storage.ref(`projects/${projectId}`));
-                    } catch(e) { console.warn('Storage削除スキップ:', e); }
-                }
-                // DB のサブパスを個別に削除（showDbAuthError回避のためraw refを使用）
-                const removePath = async (p) => {
-                    try { await dbRef(p).remove(); } catch(e) { console.warn(`削除スキップ: ${p}`, e.message); }
-                };
-                // protected配下のサブノードを個別に削除
-                const protectedBase = `projects/${projectId}/protected/${secretHash}`;
-                await Promise.all([
-                    removePath(`${protectedBase}/scores`),
-                    removePath(`${protectedBase}/answers`),
-                    removePath(`${protectedBase}/answers_text`),
-                    removePath(`${protectedBase}/config`),
-                    removePath(`${protectedBase}/requiredScorers`),
-                    removePath(`projects/${projectId}/entries`),
-                    removePath(`projects/${projectId}/publicSettings`),
-                    removePath(`projects/${projectId}/disclosure`),
-                ]);
-                showAdminToast('プロジェクトが削除されました。', 'success');
-                setTimeout(() => { session.clear(); location.href = 'index.html'; }, 1500);
-            } catch(e) {
-                console.error('削除エラー詳細:', e);
-                showAdminToast('削除エラー: ' + e.message);
-            }
-        }
 
         window.adjustNumberInput = async function(id, delta) {
             const input = document.getElementById(id);
