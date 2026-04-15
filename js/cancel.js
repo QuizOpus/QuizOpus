@@ -13,11 +13,12 @@ const params = new URLSearchParams(location.search);
         if (!projectId) return;
         await waitForAuth();
         try {
-            const pName = await dbGet(`projects/${projectId}/publicSettings/projectName`);
-            document.getElementById('cancel-title').textContent = pName || 'キャンセルフォーム';
-            document.title = (pName || 'キャンセルフォーム') + ' - キャンセルフォーム';
+            let pName = await dbGet(`projects/${projectId}/publicSettings/projectName`);
+            if (!pName) pName = await dbGet(`projects/${projectId}/settings/projectName`);
+            document.getElementById('cancel-title').textContent = pName || projectId;
+            document.title = (pName || projectId) + ' - キャンセルフォーム';
         } catch(e) {
-            document.getElementById('cancel-title').textContent = 'キャンセルフォーム';
+            document.getElementById('cancel-title').textContent = projectId;
         }
     })();
 
