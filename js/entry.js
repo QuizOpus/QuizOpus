@@ -38,15 +38,26 @@ const params = new URLSearchParams(location.search);
             e.preventDefault();
 
             const btn = document.getElementById('submit-btn');
-            btn.disabled = true;
-            btn.textContent = '処理中...';
-            showStatus('エントリーを送信しています...', 'info');
 
             const email = document.getElementById('f-email').value.trim();
             const familyName = document.getElementById('f-family-name').value.trim();
             const firstName = document.getElementById('f-first-name').value.trim();
             const familyNameKana = document.getElementById('f-family-kana').value.trim();
             const firstNameKana = document.getElementById('f-first-kana').value.trim();
+
+            // バリデーション
+            if (!email || !familyName || !firstName) {
+                showStatus('メールアドレス・姓名は必須項目です。', 'error');
+                return;
+            }
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showStatus('正しいメールアドレスを入力してください。', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '処理中...';
+            showStatus('エントリーを送信しています...', 'info');
 
             // フルオープンモード: 都道府県 → affiliation に格納、grade は空
             const isFullOpen = document.getElementById('open-mode-fields').style.display !== 'none';
