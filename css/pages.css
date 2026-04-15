@@ -378,13 +378,8 @@ body.page-conflict { padding: 0; }
 .c-affil { color: #60a5fa; }
 .c-msg { font-size: 14px; color: var(--text-main); line-height: 1.4; word-break: break-word; }
 @media (max-width: 600px) {
-  .list-container table, .list-container thead, .list-container tbody, .list-container th, .list-container td, .list-container tr { display: block; }
-  .list-container thead tr { display: none; }
-  .list-container tr { padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.08); }
-  .list-container td { padding: 4px 0; border: none; }
-  .c-time { margin-bottom: 6px; }
-  .c-affil, .c-grade { display: inline-block; margin-right: 8px; font-size: 13px; }
-  .c-msg { margin-top: 4px; }
+  .list-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .list-container table { min-width: 600px; }
 }
 
 /* ──────────────────────────────────────────

@@ -77,9 +77,30 @@
 
 
         // ============================
-        // CSV出力（仕様変更: 列順=所属,学年,氏名 / 点数・連答は非出力）
+        // CSV出力（名前フォーマットオプション対応）
         // ============================
+        function formatCsvName(familyName, firstName, entryName, useEntryName, sepType, fixedLen) {
+            // エントリーネーム使用者はそのまま
+            if (useEntryName && entryName) return entryName;
+
+            const sep = sepType === 'fullspace' ? '\u3000' : sepType === 'halfspace' ? ' ' : '';
+
+            if (fixedLen > 0) {
+                const totalChars = familyName.length + firstName.length;
+                if (totalChars < fixedLen) {
+                    // 姓名間にスペースを入れて固定長に
+                    const padCount = fixedLen - totalChars;
+                    return familyName + '\u3000'.repeat(padCount) + firstName;
+                }
+                // 固定長以上 → 通常の区切りで出力
+            }
+            return familyName + sep + firstName;
+        }
+
         async function exportCSV() {
+            const sepType = document.getElementById('csv-name-sep')?.value || 'fullspace';
+            const fixedLen = parseInt(document.getElementById('csv-name-fixed')?.value) || 0;
+
             const entriesData = await dbGet(`projects/${projectId}/entries`);
             let masterData = {};
             if (entriesData) {
@@ -89,44 +110,50 @@
 
                 for (const v of Object.values(entriesData)) {
                     if (!v.entryNumber) continue;
-                    let name = '', affiliation = '', grade = '';
+                    let familyName = '', firstName = '', affiliation = '', grade = '', entryName = '', useEntryName = false;
                     if (v.encryptedPII && privJwk) {
                         try {
                             const jsonStr = await AppCrypto.decryptRSA(v.encryptedPII, privJwk);
                             const pii = JSON.parse(jsonStr);
-                            name = `${pii.familyName} ${pii.firstName}`;
+                            familyName = pii.familyName || '';
+                            firstName = pii.firstName || '';
                             affiliation = pii.affiliation || '';
                             grade = pii.grade || '';
+                            entryName = pii.entryName || '';
+                            useEntryName = !!pii.useEntryName;
                         } catch(e) {}
                     } else {
-                        name = v.familyName ? `${v.familyName} ${v.firstName}` : '';
+                        familyName = v.familyName || '';
+                        firstName = v.firstName || '';
                         affiliation = v.affiliation || '';
                         grade = v.grade || '';
+                        entryName = v.entryName || '';
+                        useEntryName = !!v.useEntryName;
                     }
-                    masterData[v.entryNumber] = { name, affiliation, grade };
+                    masterData[v.entryNumber] = { familyName, firstName, affiliation, grade, entryName, useEntryName };
                 }
             }
 
             const results = entryNumbers.map(en => {
                 const answers = []; for (let q = 1; q <= totalQuestions; q++) { const fd = scoresData[`__final__q${q}`] || {}; const r = fd[en] === 'correct' ? 1 : 0; answers.push(r); }
                 const score = answers.reduce((a, b) => a + b, 0);
-                // 連答計算（ソート用のみ使用、CSVには出力しない）
                 const streaks = []; let cur = 0; answers.forEach(a => { if (a === 1) cur++; else { if (cur > 0) streaks.push(cur); cur = 0; } }); if (cur > 0) streaks.push(cur);
-                const m = masterData[en] || {}; return { entryNumber: en, name: m.name || '', affiliation: m.affiliation || '', grade: m.grade || '', score, answers, streaks };
+                const m = masterData[en] || {};
+                const name = formatCsvName(m.familyName || '', m.firstName || '', m.entryName || '', m.useEntryName, sepType, fixedLen);
+                return { entryNumber: en, name, affiliation: m.affiliation || '', grade: m.grade || '', score, answers, streaks };
             });
 
-            // ソート: 点数降順 → 連答降順
+            // ソート: 点数降順 → 問題番号順比較
             results.sort((a, b) => {
                 if (b.score !== a.score) return b.score - a.score;
                 for (let i = 0; i < totalQuestions; i++) { const d = b.answers[i] - a.answers[i]; if (d !== 0) return d; }
                 return 0;
             });
 
-            // ヘッダー: 所属, 学年, 氏名 のみ（点数・連答は非出力）
-            const headers = ['所属', '学年', '氏名'];
+            const headers = ['\u6240\u5c5e', '\u5b66\u5e74', '\u6c0f\u540d'];
             const rows = [headers];
             results.forEach(r => {
-                rows.push([r.affiliation, r.grade, r.name]);
+                rows.push([r.affiliation, r.grade, `"${r.name.replace(/"/g, '""')}"`]);
             });
             const csv = rows.map(r => r.join(',')).join('\n'); const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'ciq_result.csv'; a.click();
         }

@@ -1,6 +1,9 @@
 /* QuizOpus Global Design System — Liquid Glass v2 */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=Noto+Sans+JP:wght@400;500;600;800&display=swap');
 
+/* モバイルダブルタップズーム防止 */
+*, *::before, *::after { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+
 :root {
   /* Color Palette */
   --bg-dark: #020617;
@@ -775,7 +778,16 @@ textarea::placeholder { color: var(--text-faint); }
 .fixed-header h1 {
   font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-
+@media (max-width: 600px) {
+  .fixed-header { padding: 8px 12px; gap: 6px; grid-template-columns: auto 1fr auto; }
+  .fixed-header h1 { font-size: 14px; }
+  .fixed-header .header-center { gap: 6px; }
+  .q-badge { padding: 4px 10px; font-size: 13px; }
+  .answer-badge { font-size: 18px; }
+  .progress-text { font-size: 11px; }
+  .back-nav-btn { font-size: 13px; padding: 6px 10px; }
+  .counter { font-size: 11px; padding: 4px 10px; }
+}
 /* ============================
    Answer Sheet Preview Overlay
    ============================ */
