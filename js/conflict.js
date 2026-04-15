@@ -13,15 +13,18 @@ const { projectId, secretHash } = auth;
         let answersDataCache = {}; // 全答案データキャッシュ
 
         let totalQuestions = 100;
+        let requiredScorers = 3;
 
         async function init() {
             await waitForAuth();
             // config, 全答案データ, 模範解答を並列取得
-            const [config, allAnswersData, answersTextData] = await Promise.all([
+            const [config, allAnswersData, answersTextData, rs] = await Promise.all([
                 dbGet(`projects/${projectId}/protected/${secretHash}/config`),
                 dbGet(`projects/${projectId}/protected/${secretHash}/answers`).catch(e => { console.error('答案取得エラー:', e); return null; }),
-                dbGet(`projects/${projectId}/protected/${secretHash}/answers_text`)
+                dbGet(`projects/${projectId}/protected/${secretHash}/answers_text`),
+                dbGet(`projects/${projectId}/protected/${secretHash}/requiredScorers`)
             ]);
+            if (rs) requiredScorers = rs;
 
             if (config) totalQuestions = config.questionCount || 100;
             if (allAnswersData) {
@@ -47,7 +50,7 @@ const { projectId, secretHash } = auth;
 
             for (let q = 1; q <= totalQuestions; q++) {
                 const completedScorers = Object.keys(scoresData[`__completed__q${q}`] || {});
-                if (completedScorers.length < 3) continue;
+                if (completedScorers.length < requiredScorers) continue;
 
                 entryNumbers.forEach(entryNum => {
                     const qScores = scoresData[entryNum]?.[`q${q}`] || {};
@@ -55,8 +58,8 @@ const { projectId, secretHash } = auth;
                     const corrects = entries.filter(([, v]) => v === 'correct').length;
                     const wrongs = entries.filter(([, v]) => v === 'wrong').length;
 
-                    // 3票一致以外はすべてコンフリクト（管理者判断が必要）
-                    if (corrects !== 3 && wrongs !== 3) {
+                    // 全票一致以外はすべてコンフリクト（管理者判断が必要）
+                    if (corrects !== requiredScorers && wrongs !== requiredScorers) {
                         const finalResult = scoresData[`__final__q${q}`]?.[entryNum];
                         conflicts.push({ q, entryNum, qScores, finalResult });
                     }
