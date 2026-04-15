@@ -4,12 +4,12 @@ function generateStrongPassword() {
 	const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 	const lower = 'abcdefghijklmnopqrstuvwxyz';
 	const num = '0123456789';
-	const all = upper + lower + num + '!@#';
+	const all = upper + lower + num;
 	let pwd = '';
 	pwd += upper[Math.floor(Math.random() * upper.length)];
 	pwd += lower[Math.floor(Math.random() * lower.length)];
 	pwd += num[Math.floor(Math.random() * num.length)];
-	for(let i = 3; i < 12; i++) {
+	for(let i = 3; i < 14; i++) {
 		pwd += all[Math.floor(Math.random() * all.length)];
 	}
 	return pwd.split('').sort(() => 0.5 - Math.random()).join('');

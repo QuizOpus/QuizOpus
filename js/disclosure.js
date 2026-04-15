@@ -1,4 +1,4 @@
-// disclosure.js — 成績開示（Firebase SDK版）
+// disclosure.js — 成績照合（Firebase SDK版）
 
 const params = new URLSearchParams(location.search);
     const projectId = params.get('pid');
@@ -17,7 +17,7 @@ const params = new URLSearchParams(location.search);
             let pName = await dbGet(`projects/${projectId}/publicSettings/projectName`);
             if (!pName) pName = await dbGet(`projects/${projectId}/settings/projectName`);
             document.getElementById('logo-title').textContent = pName || projectId;
-            document.title = (pName || projectId) + ' - 成績開示';
+            document.title = (pName || projectId) + ' - 成績照合';
         } catch(e) {
             document.getElementById('logo-title').textContent = projectId;
         }

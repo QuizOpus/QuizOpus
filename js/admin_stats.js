@@ -1,4 +1,4 @@
-// admin_stats.js — 集計・分析・成績開示
+// admin_stats.js — 集計・分析・成績照合
         // ============================
         function updateStatsView() {
             let confirmedCount = 0, doneCount = 0, conflictCount = 0, inprogressCount = 0, untouchedCount = 0, allConfirmed = true;
