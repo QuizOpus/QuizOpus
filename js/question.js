@@ -30,41 +30,10 @@ const currentQ = parseInt(localStorage.getItem('current_q') || '1');
 
             if (allAnswers) {
                 entryNumbers = Object.keys(allAnswers).map(Number).filter(n => n > 0).sort((a, b) => a - b);
-                // キャッシュに格納 & 画像をBlob URLに変換（メモリ上で即表示）
-                const blobUrlCache = {};
-                const preloadPromises = [];
+                // キャッシュに格納
                 entryNumbers.forEach(num => {
                     answerDataCache[num] = allAnswers[num];
-                    const url = allAnswers[num]?.pageImageUrl;
-                    if (url && !blobUrlCache[url]) {
-                        blobUrlCache[url] = url; // フォールバック
-                        preloadPromises.push(
-                            fetch(url).then(r => r.blob()).then(blob => {
-                                blobUrlCache[url] = URL.createObjectURL(blob);
-                            }).catch(() => {})
-                        );
-                    }
                 });
-                // 全画像ダウンロード完了を待つ（最大8秒）
-                await Promise.race([
-                    Promise.all(preloadPromises),
-                    new Promise(r => setTimeout(r, 8000))
-                ]);
-                // 各エントリーのURLをBlob URLに差し替え
-                const uniqueBlobUrls = new Set();
-                entryNumbers.forEach(num => {
-                    const origUrl = answerDataCache[num]?.pageImageUrl;
-                    if (origUrl && blobUrlCache[origUrl]) {
-                        answerDataCache[num].pageImageUrl = blobUrlCache[origUrl];
-                        uniqueBlobUrls.add(blobUrlCache[origUrl]);
-                    }
-                });
-                // 全Blob画像をデコード（GPUメモリに載せる）
-                await Promise.all([...uniqueBlobUrls].map(blobUrl => {
-                    const img = new Image();
-                    img.src = blobUrl;
-                    return img.decode().catch(() => {});
-                }));
             }
 
             if (entryNumbers.length === 0) {
