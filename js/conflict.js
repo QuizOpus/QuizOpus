@@ -142,7 +142,7 @@ const { projectId, secretHash } = auth;
                   ${imgHtml}
                   <div class="q-tag-badge">${q}問</div>
                   <div class="entry-num">${displayName}</div>
-                  ${modelAnswer ? `<div class="conflict-model-ans">模範: <strong>${modelAnswer}</strong></div>` : ''}
+                  ${modelAnswer ? `<div class="conflict-model-ans"><strong>${modelAnswer}</strong></div>` : ''}
                   <div class="votes-mini">${votesHtml}</div>
                 `;
                 card.addEventListener('click', () => selectConflictCard(idx));
