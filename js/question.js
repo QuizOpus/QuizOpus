@@ -141,11 +141,11 @@ const currentQ = parseInt(localStorage.getItem('current_q') || '1');
                         const pctMT = -imageData.y / imageData.w * 100;
                         const pctH = imageData.h / imageData.w * 100;
                         imgHtml = `<div class="crop-wrap" style="width:100%;padding-top:${pctH}%;position:relative;overflow:hidden;background:white;border-radius:4px">
-                            <img src="${imageData.url}" alt="${displayName}" loading="eager" decoding="sync"
+                            <img src="${imageData.url}" alt="${displayName}" loading="eager" decoding="async"
                                  style="position:absolute;top:0;left:0;display:block;width:${pctW}%;height:auto;object-fit:initial;max-width:none;margin-left:${pctML}%;margin-top:${pctMT}%" />
                         </div>`;
                     } else if (imageData) {
-                        imgHtml = `<img src="${imageData}" alt="${displayName}" loading="eager" decoding="sync" />`;
+                        imgHtml = `<img src="${imageData}" alt="${displayName}" loading="eager" decoding="async" />`;
                     } else {
                         imgHtml = `<div class="img-expired"><i class="fa-solid fa-clock"></i> 画像の有効期限切れ</div>`;
                     }
