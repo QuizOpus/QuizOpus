@@ -215,8 +215,8 @@
                     return;
                 }
 
-                // 並列バッチアップロード（5件同時）
-                const UPLOAD_CONCURRENCY = 5;
+                // 並列バッチアップロード（10件同時）
+                const UPLOAD_CONCURRENCY = 10;
 
                 async function uploadEntry(a) {
                     try {
