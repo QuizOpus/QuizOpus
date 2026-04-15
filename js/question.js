@@ -154,12 +154,14 @@ const currentQ = parseInt(localStorage.getItem('current_q') || '1');
                         const pctML = -imageData.x / imageData.w * 100;
                         const pctMT = -imageData.y / imageData.w * 100;
                         const pctH = imageData.h / imageData.w * 100;
-                        imgHtml = `<div class="crop-wrap" style="width:100%;padding-top:${pctH}%;position:relative;overflow:hidden;background:white;border-radius:4px;opacity:0;transition:opacity 0.3s">
+                        imgHtml = `<div class="crop-wrap" style="width:100%;padding-top:${pctH}%;position:relative;overflow:hidden;background:white;border-radius:4px;opacity:0">
                             <img src="${imageData.url}" alt="${displayName}"
                                  style="position:absolute;top:0;left:0;display:block;width:${pctW}%;height:auto;object-fit:initial;max-width:none;margin-left:${pctML}%;margin-top:${pctMT}%" />
                         </div>`;
+                    } else if (imageData) {
+                        imgHtml = `<img src="${imageData}" alt="${displayName}" style="opacity:0" />`;
                     } else {
-                        imgHtml = `<img src="${imageData || ''}" alt="${displayName}" style="opacity:0;transition:opacity 0.3s" />`;
+                        imgHtml = `<div class="img-expired"><i class="fa-solid fa-clock"></i> 画像の有効期限切れ</div>`;
                     }
 
                     card.innerHTML = `${imgHtml}<div class="entry-num">${displayName}</div>`;
@@ -167,13 +169,16 @@ const currentQ = parseInt(localStorage.getItem('current_q') || '1');
                     card.addEventListener('dblclick', () => showPreview(projectId, secretHash, entryNum));
                     grid.appendChild(card);
 
-                    // 個別フェードイン: 画像が読み込まれた順に表示
+                    // 画像表示: キャッシュ済みなら即表示、未ロードならフェードイン
                     const img = card.querySelector('img');
                     if (img && img.src) {
                         const wrapper = card.querySelector('.crop-wrap') || img;
                         if (img.complete) {
+                            // プリロード済み → アニメーションなしで即表示
                             wrapper.style.opacity = '1';
                         } else {
+                            // 未ロード → フェードイン
+                            wrapper.style.transition = 'opacity 0.3s';
                             img.onload = () => { wrapper.style.opacity = '1'; };
                             img.onerror = () => { wrapper.style.opacity = '1'; };
                         }
