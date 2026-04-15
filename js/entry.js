@@ -75,6 +75,20 @@ const params = new URLSearchParams(location.search);
                 const entryNumber = txResult.value;
                 const pwHash = await AppCrypto.hashPassword(pw);
 
+                // 定員チェック
+                const pubSettings = await dbGet(`projects/${projectId}/publicSettings`);
+                const maxEntries = pubSettings?.maxEntries || 0;
+                let entryStatus = 'registered';
+                if (maxEntries > 0) {
+                    const allEntries = await dbGet(`projects/${projectId}/entries`);
+                    const activeCount = allEntries
+                        ? Object.values(allEntries).filter(e => e.status === 'registered').length
+                        : 0;
+                    if (activeCount >= maxEntries) {
+                        entryStatus = 'waitlist';
+                    }
+                }
+
                 // 公開鍵を取得してPIIを暗号化
                 const publicKeyJwk = await dbGet(`projects/${projectId}/publicSettings/publicKey`);
                 if (!publicKeyJwk) throw new Error("セキュリティキーが取得できません");
@@ -89,7 +103,7 @@ const params = new URLSearchParams(location.search);
                     entryNumber,
                     encryptedPII,
                     disclosurePw: pwHash,
-                    status: 'registered',
+                    status: entryStatus,
                     checkedIn: false,
                     timestamp: SERVER_TIMESTAMP
                 };
@@ -126,6 +140,15 @@ const params = new URLSearchParams(location.search);
                 document.getElementById('r-entry-number').textContent = String(entryNumber).padStart(3, '0');
                 document.getElementById('r-password').textContent = pw;
                 document.getElementById('status-msg').style.display = 'none';
+
+                // キャンセル待ちの場合の追加メッセージ
+                if (entryStatus === 'waitlist') {
+                    const waitMsg = document.createElement('div');
+                    waitMsg.className = 'status-msg warning';
+                    waitMsg.innerHTML = '<i class="fa-solid fa-clock"></i> 定員に達したため、<strong>キャンセル待ち</strong>として登録されました。キャンセルが出た場合、メールでお知らせします。';
+                    waitMsg.style.cssText = 'display:block;margin:12px 0;padding:12px 16px;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);border-radius:8px;color:#fbbf24;font-size:13px;';
+                    document.getElementById('r-entry-number').parentElement.after(waitMsg);
+                }
 
             } catch (err) {
                 btn.disabled = false;

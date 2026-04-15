@@ -157,9 +157,10 @@
         async function saveEntryPeriod() {
             const start = document.getElementById('entry-period-start').value || null;
             const end = document.getElementById('entry-period-end').value || null;
-            await dbUpdate(`projects/${projectId}/protected/${secretHash}/entryConfig`, { periodStart: start, periodEnd: end });
-            await dbUpdate(`projects/${projectId}/publicSettings`, { periodStart: start, periodEnd: end });
-            showAdminToast('受付期間を保存しました', 'success');
+            const maxEntries = parseInt(document.getElementById('setting-max-entries').value) || 0;
+            await dbUpdate(`projects/${projectId}/protected/${secretHash}/entryConfig`, { periodStart: start, periodEnd: end, maxEntries });
+            await dbUpdate(`projects/${projectId}/publicSettings`, { periodStart: start, periodEnd: end, maxEntries });
+            showAdminToast('受付期間・定員を保存しました', 'success');
         }
 
         // ============================

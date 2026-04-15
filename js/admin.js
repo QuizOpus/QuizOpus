@@ -159,6 +159,9 @@
                     document.getElementById('entry-period-end').value = ec.periodEnd;
                     document.getElementById('dt-end-display').textContent = formatDtDisplay(ec.periodEnd);
                 }
+                if (ec.maxEntries) {
+                    document.getElementById('setting-max-entries').value = ec.maxEntries;
+                }
                 updateEntryOpenStatus();
             }
 
