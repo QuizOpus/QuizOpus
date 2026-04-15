@@ -30,18 +30,27 @@ const currentQ = parseInt(localStorage.getItem('current_q') || '1');
 
             if (allAnswers) {
                 entryNumbers = Object.keys(allAnswers).map(Number).filter(n => n > 0).sort((a, b) => a - b);
-                // キャッシュに格納 & 画像プリロード開始
+                // キャッシュに格納 & 画像を全てダウンロード完了まで待つ
                 const preloadedUrls = new Set();
+                const preloadPromises = [];
                 entryNumbers.forEach(num => {
                     answerDataCache[num] = allAnswers[num];
-                    // 画像を即座にダウンロード開始
                     const url = allAnswers[num]?.pageImageUrl;
                     if (url && !preloadedUrls.has(url)) {
                         preloadedUrls.add(url);
-                        const img = new Image();
-                        img.src = url;
+                        preloadPromises.push(new Promise(resolve => {
+                            const img = new Image();
+                            img.onload = resolve;
+                            img.onerror = resolve;
+                            img.src = url;
+                        }));
                     }
                 });
+                // 全画像ダウンロード完了を待つ（最大5秒）
+                await Promise.race([
+                    Promise.all(preloadPromises),
+                    new Promise(r => setTimeout(r, 5000))
+                ]);
             }
 
             if (entryNumbers.length === 0) {
