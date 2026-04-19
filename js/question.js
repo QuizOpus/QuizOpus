@@ -57,7 +57,7 @@ let requiredScorers = 3;
                         pageW: cellData.pageWidth
                     };
                 } else {
-                    const cellUrl = cellData?.cellUrls?.[`q${currentQ}`] || cellData?.cells?.[`q${currentQ}`];
+                    const cellUrl = cellData?.cells?.[`q${currentQ}`] || null;
                     answers[entryNum].cells[`q${currentQ}`] = cellUrl;
                 }
             });

@@ -106,7 +106,7 @@
             for (const [key, data] of Object.entries(answersSnap)) {
                 if (data.uploadedAt && (now - data.uploadedAt > ONE_DAY)) {
                     // RTDB の画像データを null にする（メタデータは残す）
-                    const cleanUpdate = { pageImage: null, cells: null, cellUrls: null };
+                    const cleanUpdate = { pageImage: null, cells: null };
                     await dbUpdate(`projects/${projectId}/protected/${secretHash}/answers/${key}`, cleanUpdate);
                 }
             }

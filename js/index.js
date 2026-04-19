@@ -21,8 +21,10 @@ let currentTab = 'join';
 
 function setTab(tab) {
 	currentTab = tab;
-	document.getElementById('tab-join').className = tab === 'join' ? 'tab active' : 'tab';
-	document.getElementById('tab-create').className = tab === 'create' ? 'tab active' : 'tab';
+	const tabJoin = document.getElementById('tab-join');
+	const tabCreate = document.getElementById('tab-create');
+	if (tabJoin) tabJoin.className = tab === 'join' ? 'tab active' : 'tab';
+	if (tabCreate) tabCreate.className = tab === 'create' ? 'tab active' : 'tab';
 	
 
 	document.getElementById('section-join').hidden = tab !== 'join';
@@ -224,7 +226,8 @@ async function createProject() {
 		session.set('privateKeyJwk', JSON.stringify(privateKeyJwk));
 
 		// UIDisplay
-		document.getElementById('tabs-container').hidden = true;
+		const tabsContainer = document.getElementById('tabs-container');
+		if (tabsContainer) tabsContainer.hidden = true;
 		document.getElementById('section-create').hidden = true;
 		document.getElementById('section-success').hidden = false;
 		document.getElementById('success-id').value = pid;
@@ -295,7 +298,8 @@ async function importProject() {
 		session.set('adminHash', adminHash);
 		session.set('privateKeyJwk', JSON.stringify(privateKeyJwk));
 
-		document.getElementById('tabs-container').hidden = true;
+		const tabsContainer2 = document.getElementById('tabs-container');
+		if (tabsContainer2) tabsContainer2.hidden = true;
 		document.getElementById('section-import').hidden = true;
 		document.getElementById('section-success').hidden = false;
 		document.getElementById('success-id').value = pid;

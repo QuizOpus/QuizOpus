@@ -79,7 +79,7 @@ const { projectId, secretHash } = auth;
                             pageW: ansData.pageWidth
                         };
                     } else {
-                        const cellUrl = ansData?.cellUrls?.[`q${c.q}`] || ansData?.cells?.[`q${c.q}`] || null;
+                        const cellUrl = ansData?.cells?.[`q${c.q}`] || null;
                         answersData[c.entryNum].cells[`q${c.q}`] = cellUrl;
                     }
                 }

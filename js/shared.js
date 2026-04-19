@@ -291,8 +291,7 @@ async function showPreview(projectId, secretHash, entryNum) {
 
     const answerData = await dbGet(`projects/${projectId}/protected/${secretHash}/answers/${entryNum}`);
     const pc = document.getElementById('preview-content');
-    // Storage URL 優先、旧 Base64 フォールバック
-    const imageUrl = answerData?.pageImageUrl || answerData?.pageImage;
+    const imageUrl = answerData?.pageImage;
     if (imageUrl) {
         pc.innerHTML = `<img src="${imageUrl}" alt="${name}" class="preview-image">`;
     } else {
