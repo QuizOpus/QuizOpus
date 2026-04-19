@@ -81,13 +81,6 @@
         async function deleteEntry(num, e) {
             e?.stopPropagation();
             if (!(await showConfirm(`受付番号 ${num} の答案を削除しますか？`))) return;
-            // Storage の画像も削除
-            if (storage) {
-                try {
-                    const pageRef = storage.ref(`projects/${projectId}/answers/${num}/pageImage`);
-                    await pageRef.delete().catch(() => {});
-                } catch(e) {}
-            }
             await dbRemove(`projects/${projectId}/protected/${secretHash}/answers/${num}`);
             await dbRemove(`projects/${projectId}/protected/${secretHash}/scores/${num}`);
             loadEntryList();
@@ -98,14 +91,10 @@
             if (!(await showConfirm(`${checked.length}件の答案を一括削除しますか？`))) return;
             // 全エントリーを並列削除
             await Promise.all(checked.map(async num => {
-                const ops = [
+                await Promise.all([
                     dbRemove(`projects/${projectId}/protected/${secretHash}/answers/${num}`),
                     dbRemove(`projects/${projectId}/protected/${secretHash}/scores/${num}`)
-                ];
-                if (storage) {
-                    ops.push(storage.ref(`projects/${projectId}/answers/${num}/pageImage`).delete().catch(() => {}));
-                }
-                await Promise.all(ops);
+                ]);
             }));
             loadEntryList();
         }
@@ -124,7 +113,7 @@
             overlay.style.display = 'block';
             const ansData = await dbGet(`projects/${projectId}/protected/${secretHash}/answers/${num}`);
             const pc = document.getElementById('admin-preview-content');
-            const imageUrl = ansData?.pageImageUrl || ansData?.pageImage;
+            const imageUrl = ansData?.pageImage;
             if (imageUrl) {
                 pc.innerHTML = `<img src="${imageUrl}" alt="${name}" class="preview-image">`;
             } else {

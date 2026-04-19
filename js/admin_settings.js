@@ -98,19 +98,15 @@
         }
 
         async function purgeOldImages() {
-            // 24時間以上前の answers 画像を全削除（Storage + RTDB）
+            // 24時間以上前の answers の画像データを削除（RTDB内のBase64）
             const answersSnap = await dbGet(`projects/${projectId}/protected/${secretHash}/answers`);
             if (!answersSnap) return;
             const now = Date.now();
             const ONE_DAY = 24 * 60 * 60 * 1000;
             for (const [key, data] of Object.entries(answersSnap)) {
                 if (data.uploadedAt && (now - data.uploadedAt > ONE_DAY)) {
-                    // Storage の画像を削除
-                    if (storage) {
-                        try { await storage.ref(`projects/${projectId}/answers/${key}/pageImage`).delete().catch(() => {}); } catch(e){}
-                    }
-                    // RTDB の画像データ/URLを null にする（メタデータは残す）
-                    const cleanUpdate = { pageImage: null, pageImageUrl: null, cells: null, cellUrls: null };
+                    // RTDB の画像データを null にする（メタデータは残す）
+                    const cleanUpdate = { pageImage: null, cells: null, cellUrls: null };
                     await dbUpdate(`projects/${projectId}/protected/${secretHash}/answers/${key}`, cleanUpdate);
                 }
             }
@@ -476,18 +472,6 @@
 
             try {
                 showAdminToast('プロジェクトを削除しています...', 'info', 10000);
-
-                // Storage の画像データを再帰削除
-                if (storage) {
-                    try {
-                        async function deleteFolder(ref) {
-                            const list = await ref.listAll();
-                            for (const item of list.items) { await item.delete().catch(() => {}); }
-                            for (const prefix of list.prefixes) { await deleteFolder(prefix); }
-                        }
-                        await deleteFolder(storage.ref(`projects/${projectId}`));
-                    } catch (e) { console.warn('Storage削除スキップ:', e); }
-                }
 
                 // DB のサブパスを個別に削除（ルート一括はDB権限エラー）
                 const removePath = async (p) => {

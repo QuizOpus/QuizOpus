@@ -49,10 +49,10 @@ let requiredScorers = 3;
                 const cellData = answerDataCache[entryNum];
                 if (!answers[entryNum]) answers[entryNum] = { cells: {} };
                 const region = cellData?.cellRegions?.[`q${currentQ}`];
-                if (region && cellData?.pageImageUrl && cellData?.pageWidth) {
+                if (region && cellData?.pageImage && cellData?.pageWidth) {
                     answers[entryNum].cells[`q${currentQ}`] = {
                         type: 'crop',
-                        url: cellData.pageImageUrl,
+                        url: cellData.pageImage,
                         x: region.x, y: region.y, w: region.w, h: region.h,
                         pageW: cellData.pageWidth
                     };

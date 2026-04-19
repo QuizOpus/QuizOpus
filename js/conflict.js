@@ -72,9 +72,9 @@ const { projectId, secretHash } = auth;
                 if (answersData[c.entryNum].cells[`q${c.q}`] === undefined) {
                     const ansData = answersDataCache[c.entryNum];
                     const region = ansData?.cellRegions?.[`q${c.q}`];
-                    if (region && ansData?.pageImageUrl && ansData?.pageWidth) {
+                    if (region && ansData?.pageImage && ansData?.pageWidth) {
                         answersData[c.entryNum].cells[`q${c.q}`] = {
-                            type: 'crop', url: ansData.pageImageUrl,
+                            type: 'crop', url: ansData.pageImage,
                             x: region.x, y: region.y, w: region.w, h: region.h,
                             pageW: ansData.pageWidth
                         };

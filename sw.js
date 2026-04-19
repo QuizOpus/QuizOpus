@@ -42,7 +42,6 @@ self.addEventListener('fetch', (event) => {
 
     // Firebase REST API やGASはキャッシュしない
     if (url.hostname.includes('firebasedatabase') ||
-        url.hostname.includes('firebasestorage') ||
         url.hostname.includes('googleapis') ||
         url.hostname.includes('google.com')) {
         return;

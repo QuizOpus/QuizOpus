@@ -28,8 +28,7 @@
             });
         }
 
-        // Firebase Storage 初期化 (admin.html のみ読み込み)
-        const storage = (typeof firebase !== 'undefined' && firebase.storage) ? firebase.storage() : null;
+
 
         let totalQuestions = 100;
         let scoresData = {};

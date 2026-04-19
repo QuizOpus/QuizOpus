@@ -3,7 +3,6 @@ const firebaseConfig = {
   apiKey: "AIzaSyBqp86LCsX3vGoA3Ug1aBnZbA_oQIVW614",
   authDomain: "quziopus.firebaseapp.com",
   projectId: "quziopus",
-  storageBucket: "quziopus.firebasestorage.app",
   messagingSenderId: "61719920613",
   appId: "1:61719920613:web:a7002a7378c171f98d790c",
   measurementId: "G-FFP3YGKFDT",

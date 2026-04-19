@@ -209,41 +209,29 @@
                         const cr = transformRegion(scanConfig.answerRegions[q], transform);
                         cellRegions[`q${q + 1}`] = { x: Math.round(cr.x), y: Math.round(cr.y), w: Math.round(cr.w), h: Math.round(cr.h) };
                     }
-                    scanAnswers.push({ page: i, entryNumber, cellRegions, tomboError: detectedResult.error, pageImage: workCanvas.toDataURL('image/webp', 0.4), pageWidth: workCanvas.width });
+                    scanAnswers.push({ page: i, entryNumber, cellRegions, tomboError: detectedResult.error, pageImage: workCanvas.toDataURL('image/webp', 0.3), pageWidth: workCanvas.width });
                 }
 
                 overlayTitle.textContent = 'サーバーへ保存中...';
                 overlayBar.style.width = '0%';
                 let current = 0; const totalBatch = scanAnswers.length;
 
-                if (!storage) {
-                    showAdminToast('Firebase Storage が未設定です。管理者に連絡してください。', 'error');
-                    overlay.style.display = 'none';
-                    return;
-                }
-
-                // 並列バッチアップロード（10件同時）
+                // Base64画像をRTDBに直接保存（並列バッチ）
                 const UPLOAD_CONCURRENCY = 15;
 
                 async function uploadEntry(a) {
                     try {
-                        const storagePath = `projects/${projectId}/answers/${a.entryNumber}/pageImage`;
-                        const pageRef = storage.ref(storagePath);
-                        // Storage アップロードと URL 取得を直列（依存あり）、DB書き込みは URL 取得後即実行
-                        const pageSnap = await pageRef.putString(a.pageImage, 'data_url');
-                        const pageImageUrl = await pageSnap.ref.getDownloadURL();
-                        // DB書き込み（awaitしない — 次のアップロードを即開始）
-                        dbSet(`projects/${projectId}/protected/${secretHash}/answers/${a.entryNumber}`, {
+                        await dbSet(`projects/${projectId}/protected/${secretHash}/answers/${a.entryNumber}`, {
                             entryNumber: a.entryNumber,
                             page: a.page,
                             uploadedAt: SERVER_TIMESTAMP,
-                            pageImageUrl: pageImageUrl,
+                            pageImage: a.pageImage,
                             cellRegions: a.cellRegions,
                             pageWidth: a.pageWidth
-                        }).catch(e => console.error(`DB write error for ${a.entryNumber}:`, e));
+                        });
                     } catch (e) {
                         console.error(`Entry ${a.entryNumber} upload error:`, e);
-                        showAdminToast(`受付番号 ${padNum(a.entryNumber)}: アップロード失敗`, 'error');
+                        showAdminToast(`受付番号 ${padNum(a.entryNumber)}: 保存失敗`, 'error');
                     }
                     current++;
                     overlayBar.style.width = `${(current / totalBatch) * 100}%`;
