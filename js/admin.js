@@ -184,6 +184,9 @@
                 document.getElementById('allow-entry-name-status').className = 'status-badge status-open';
             }
 
+            // プロジェクト寿命表示
+            renderProjectLifetime(publicSettings);
+
             document.getElementById('stat-total').textContent = totalQuestions;
 
             // 必要採点者数の読み込み

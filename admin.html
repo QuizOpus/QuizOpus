@@ -378,6 +378,30 @@
 
         <!-- ==================== TAB 5: 設定 ==================== -->
         <div class="tab-content" id="tab-settings">
+            <div class="section glass-panel" id="project-lifetime-panel">
+                <h2><i class="fa-solid fa-hourglass-half"></i> プロジェクト寿命</h2>
+                <div id="lifetime-content" class="lifetime-grid">
+                    <div class="lifetime-item">
+                        <div class="lifetime-label"><i class="fa-solid fa-calendar-plus"></i> 作成日</div>
+                        <div class="lifetime-value" id="lifetime-created">—</div>
+                    </div>
+                    <div class="lifetime-item">
+                        <div class="lifetime-label"><i class="fa-solid fa-clock-rotate-left"></i> 最終アクセス</div>
+                        <div class="lifetime-value" id="lifetime-last-access">—</div>
+                    </div>
+                    <div class="lifetime-item">
+                        <div class="lifetime-label"><i class="fa-solid fa-calendar-xmark"></i> 自動削除予定</div>
+                        <div class="lifetime-value" id="lifetime-expiry">—</div>
+                    </div>
+                </div>
+                <div id="lifetime-bar-wrap" class="lifetime-bar-wrap" hidden>
+                    <div class="lifetime-bar">
+                        <div class="lifetime-bar-fill" id="lifetime-bar-fill"></div>
+                    </div>
+                    <div class="lifetime-bar-label" id="lifetime-bar-label"></div>
+                </div>
+                <div id="lifetime-warning" hidden></div>
+            </div>
             <div class="section glass-panel">
                 <h2><i class="fa-solid fa-signature"></i> プロジェクト名</h2>
                 <div class="name-input-flex">

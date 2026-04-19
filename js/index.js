@@ -136,6 +136,7 @@ async function joinProject() {
 				session.set('scorer_name', name);
 				session.set('scorer_role', 'scorer');
 				session.set('secretHash', hash);
+				dbSet(`projects/${pid}/publicSettings/lastAccess`, SERVER_TIMESTAMP).catch(() => {});
 				location.href = 'judge.html';
 				return;
 			} else {
@@ -152,6 +153,7 @@ async function joinProject() {
 				} catch (e) {
 					console.error("Failed to decrypt private key");
 				}
+				dbSet(`projects/${pid}/publicSettings/lastAccess`, SERVER_TIMESTAMP).catch(() => {});
 				location.href = 'admin.html';
 				return;
 			}
@@ -203,7 +205,9 @@ async function createProject() {
 		const updates = {};
 		updates[`publicSettings`] = {
 			projectName: pName,
-			publicKey: publicKeyJwk
+			publicKey: publicKeyJwk,
+			createdAt: SERVER_TIMESTAMP,
+			lastAccess: SERVER_TIMESTAMP
 		};
 		updates[`protected/${scorerHash}/settings`] = {
 			role: 'scorer',
@@ -270,7 +274,7 @@ async function importProject() {
 		const encryptedPriv = await AppCrypto.encryptAES(JSON.stringify(privateKeyJwk), adminPwd);
 
 		const updates = {};
-		updates[`publicSettings`] = { projectName: pName, publicKey: publicKeyJwk };
+		updates[`publicSettings`] = { projectName: pName, publicKey: publicKeyJwk, createdAt: SERVER_TIMESTAMP, lastAccess: SERVER_TIMESTAMP };
 		if (data.entries) updates[`entries`] = data.entries;
 		
 		updates[`protected/${scorerHash}`] = {

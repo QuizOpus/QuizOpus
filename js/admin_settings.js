@@ -556,4 +556,86 @@
             if (panel) { panel.style.transition = 'all 0.3s ease'; panel.style.opacity = '0'; panel.style.transform = 'translateY(-10px)'; setTimeout(() => panel.remove(), 300); }
         }
 
+        // ============================
+        // プロジェクト寿命表示
+        // ============================
+        const PROJECT_LIFETIME_DAYS = 180; // 半年
+
+        function renderProjectLifetime(publicSettings) {
+            const createdAt = publicSettings.createdAt;
+            const lastAccess = publicSettings.lastAccess;
+
+            const formatDate = (ts) => {
+                if (!ts) return null;
+                const d = new Date(ts);
+                return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;
+            };
+            const formatDateFull = (ts) => {
+                if (!ts) return '—';
+                const d = new Date(ts);
+                const pad = n => String(n).padStart(2, '0');
+                return `${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            };
+
+            const elCreated = document.getElementById('lifetime-created');
+            const elLastAccess = document.getElementById('lifetime-last-access');
+            const elExpiry = document.getElementById('lifetime-expiry');
+            const elBarWrap = document.getElementById('lifetime-bar-wrap');
+            const elBarFill = document.getElementById('lifetime-bar-fill');
+            const elBarLabel = document.getElementById('lifetime-bar-label');
+            const elWarning = document.getElementById('lifetime-warning');
+
+            if (createdAt) {
+                elCreated.textContent = formatDateFull(createdAt);
+            } else {
+                elCreated.textContent = '記録なし（旧プロジェクト）';
+                elCreated.style.color = 'var(--text-muted)';
+            }
+
+            if (lastAccess) {
+                const ago = Math.floor((Date.now() - lastAccess) / (1000 * 60 * 60 * 24));
+                elLastAccess.textContent = `${formatDateFull(lastAccess)}（${ago}日前）`;
+            }
+
+            // 期限計算: lastAccess から180日後
+            const baseTs = lastAccess || createdAt;
+            if (baseTs) {
+                const expiryDate = new Date(baseTs + PROJECT_LIFETIME_DAYS * 24 * 60 * 60 * 1000);
+                const remainingDays = Math.ceil((expiryDate - Date.now()) / (1000 * 60 * 60 * 24));
+                const elapsedDays = PROJECT_LIFETIME_DAYS - remainingDays;
+                const pct = Math.min(100, Math.max(0, (elapsedDays / PROJECT_LIFETIME_DAYS) * 100));
+
+                elExpiry.textContent = `${formatDate(expiryDate.getTime())}（残り ${remainingDays} 日）`;
+
+                // プログレスバー
+                elBarWrap.hidden = false;
+                elBarFill.style.width = pct + '%';
+
+                if (remainingDays <= 30) {
+                    elBarFill.style.background = 'linear-gradient(90deg, #f59e0b, #ef4444)';
+                    elExpiry.style.color = '#ef4444';
+                    elExpiry.style.fontWeight = '700';
+                } else if (remainingDays <= 60) {
+                    elBarFill.style.background = 'linear-gradient(90deg, #34d399, #f59e0b)';
+                } else {
+                    elBarFill.style.background = 'linear-gradient(90deg, #6366f1, #34d399)';
+                }
+
+                elBarLabel.textContent = `${elapsedDays} / ${PROJECT_LIFETIME_DAYS} 日経過`;
+
+                // 警告表示
+                if (remainingDays <= 0) {
+                    elWarning.hidden = false;
+                    elWarning.className = 'lifetime-warning danger';
+                    elWarning.innerHTML = '<i class="fa-solid fa-skull-crossbones"></i> 自動削除期限を超過しています。データが削除される可能性があります。アクセスすることで期限がリセットされます。';
+                } else if (remainingDays <= 30) {
+                    elWarning.hidden = false;
+                    elWarning.className = 'lifetime-warning caution';
+                    elWarning.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> 自動削除まで残り ' + remainingDays + ' 日です。定期的にアクセスするか、エクスポートでバックアップを取ってください。';
+                } else {
+                    elWarning.hidden = true;
+                }
+            }
+        }
+
         init();
