@@ -145,17 +145,17 @@
                 <!-- 定員設定 -->
                 <div class="config-panel">
                     <div class="config-row">
-                        <label class="toggle-switch"><input type="checkbox" id="max-entries-toggle" onchange="toggleMaxEntries()"><span class="toggle-slider"></span></label>
+                        <label class="toggle-switch"><input type="checkbox" id="max-entries-toggle" checked onchange="toggleMaxEntries()"><span class="toggle-slider"></span></label>
                         <div class="toggle-info">
                             <div class="toggle-info-title">定員制限</div>
                             <div class="toggle-info-desc">ONにすると定員を超えたエントリーはキャンセル待ちになります</div>
                         </div>
-                        <span id="max-entries-status" class="status-badge status-closed">制限なし</span>
+                        <span id="max-entries-status" class="status-badge status-open">120人</span>
                     </div>
-                    <div id="max-entries-input-area" style="display:none;margin-top:12px;">
+                    <div id="max-entries-input-area" style="margin-top:12px;">
                         <div class="number-spinner-wrap" style="max-width:180px;">
                             <button type="button" class="number-spinner-btn" onclick="adjustNumberInput('setting-max-entries', -10)"><i class="fa-solid fa-minus"></i></button>
-                            <input type="number" id="setting-max-entries" min="1" max="9999" value="100" onchange="saveEntryPeriod()" />
+                            <input type="number" id="setting-max-entries" min="1" max="9999" value="120" onchange="saveEntryPeriod()" />
                             <button type="button" class="number-spinner-btn" onclick="adjustNumberInput('setting-max-entries', 10)"><i class="fa-solid fa-plus"></i></button>
                         </div>
                         <div style="font-size:11px;color:var(--text-muted);margin-top:4px;"><i class="fa-solid fa-circle-info"></i> 10人単位で増減</div>
@@ -218,11 +218,7 @@
                         <p class="desc-text-centered">
                             <i class="fa-solid fa-circle-info"></i> CSVファイルをアップロードして模範解答を一括登録します。
                         </p>
-                        <div class="format-box">
-                            <div class="format-box-title"><i class="fa-solid fa-file-csv"></i> 対応フォーマット</div>
-                            <div>番号付き: <code class="code-highlight">1,東京</code></div>
-                            <div>番号なし: 1行目＝第1問、2行目＝第2問…</div>
-                        </div>
+
                         <div class="file-upload-zone" onclick="document.getElementById('csv-file').click()">
                             <i class="fa-solid fa-file-csv"></i>
                             <div class="file-label">CSVファイルを選択</div>
