@@ -126,24 +126,17 @@
 
         <div class="page-card result-card" id="result-card" style="display:none">
             <h2 class="result-title"><i class="fa-solid fa-circle-check"></i> エントリー完了！</h2>
-            <p class="result-desc">以下の情報で受付いたしました。</p>
+            <p class="result-desc">エントリーを受け付けました。</p>
 
             <div class="result-info-box">
                 <div class="info-label"><i class="fa-solid fa-hashtag"></i> あなたの受付番号</div>
                 <div class="info-value" id="r-entry-number">---</div>
-
-                <div class="info-label"><i class="fa-solid fa-key"></i> 成績照合・キャンセル用パスワード</div>
-                <div class="pw-display" id="r-password">------</div>
             </div>
 
-            <button class="page-btn" id="copy-credentials-btn" onclick="copyCredentials()" style="margin-bottom:12px;background:linear-gradient(135deg,#3b82f6,#6366f1)">
-                <i class="fa-solid fa-copy"></i> 受付番号とパスワードをコピー
-            </button>
-
-            <div class="pw-warning" style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:14px 16px;margin-bottom:16px;text-align:center;">
-                <i class="fa-solid fa-triangle-exclamation" style="color:#f87171;font-size:18px;display:block;margin-bottom:6px"></i>
-                <strong style="color:#f87171;font-size:14px">この画面を閉じるとパスワードは二度と確認できません</strong>
-                <div style="color:#9ca3af;font-size:12px;margin-top:6px">必ずスクリーンショットまたはコピーで保存してください</div>
+            <div style="background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.3);border-radius:10px;padding:14px 16px;margin-bottom:16px;text-align:center;">
+                <i class="fa-solid fa-envelope" style="color:#60a5fa;font-size:18px;display:block;margin-bottom:6px"></i>
+                <strong style="color:#60a5fa;font-size:14px">受付情報をメールで送信しました</strong>
+                <div style="color:#9ca3af;font-size:12px;margin-top:6px">パスワード・当日受付用QRコードはメールをご確認ください</div>
             </div>
 
             <button class="btn secondary" onclick="location.reload()"><i class="fa-solid fa-rotate-right"></i> 新しいエントリーを行う</button>

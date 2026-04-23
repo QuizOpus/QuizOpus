@@ -128,6 +128,7 @@ const params = new URLSearchParams(location.search);
                     projectName: pName,
                     entryNumber: String(entryNumber).padStart(3, '0'),
                     password: pw,
+                    uuid,
                     familyName,
                     firstName,
                     status: entryStatus,
@@ -137,7 +138,6 @@ const params = new URLSearchParams(location.search);
                 document.getElementById('form-card').style.display = 'none';
                 document.getElementById('result-card').style.display = 'block';
                 document.getElementById('r-entry-number').textContent = String(entryNumber).padStart(3, '0');
-                document.getElementById('r-password').textContent = pw;
                 document.getElementById('status-msg').style.display = 'none';
 
                 // キャンセル待ちの場合の追加メッセージ
