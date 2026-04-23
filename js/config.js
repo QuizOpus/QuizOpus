@@ -1,12 +1,13 @@
 // Firebase 共通設定
 const firebaseConfig = {
-  apiKey: "AIzaSyBqp86LCsX3vGoA3Ug1aBnZbA_oQIVW614",
-  authDomain: "quziopus.firebaseapp.com",
-  projectId: "quziopus",
-  messagingSenderId: "61719920613",
-  appId: "1:61719920613:web:a7002a7378c171f98d790c",
-  measurementId: "G-FFP3YGKFDT",
-  databaseURL: "https://quziopus-default-rtdb.asia-southeast1.firebasedatabase.app/"
+  apiKey: "AIzaSyBddMg4lPD3PNMbFVgCANF3CSWhRubCWws",
+  authDomain: "ciq-digital.firebaseapp.com",
+  projectId: "ciq-digital",
+  storageBucket: "ciq-digital.firebasestorage.app",
+  messagingSenderId: "863546263613",
+  appId: "1:863546263613:web:bc5c52656b35ff74a0c254",
+  measurementId: "G-N32TSS5J4J",
+  databaseURL: "https://ciq-digital-default-rtdb.asia-southeast1.firebasedatabase.app/"
 };
 
 // Firebase SDK初期化
