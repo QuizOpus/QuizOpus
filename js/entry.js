@@ -81,7 +81,9 @@ const params = new URLSearchParams(location.search);
                 }
 
                 const entryNumber = txResult.value;
+                console.log('Step 1: hashPassword(pw)');
                 const pwHash = await AppCrypto.hashPassword(pw);
+                console.log('Step 1 OK');
 
                 // 定員チェック
                 const pubSettings = await dbGet(`projects/${projectId}/publicSettings`);
@@ -98,13 +100,18 @@ const params = new URLSearchParams(location.search);
                 }
 
                 // 公開鍵を取得してPIIを暗号化
+                console.log('Step 2: get publicKey');
                 const publicKeyJwk = await dbGet(`projects/${projectId}/publicSettings/publicKey`);
                 if (!publicKeyJwk) throw new Error("セキュリティキーが取得できません");
+                console.log('Step 2 OK, key type:', typeof publicKeyJwk, publicKeyJwk?.kty);
                 const useEntryName = false; // CIQ大会は本名表示固定
                 
                 const piiData = { email, familyName, firstName, familyNameKana, firstNameKana, affiliation, grade, entryName, useEntryName, message, inquiry };
+                console.log('Step 3: encryptRSA');
                 const encryptedPII = await AppCrypto.encryptRSA(JSON.stringify(piiData), publicKeyJwk);
+                console.log('Step 3 OK');
 
+                console.log('Step 4: hashPassword(email)');
                 const entryData = {
                     uuid,
                     entryNumber,
@@ -115,8 +122,10 @@ const params = new URLSearchParams(location.search);
                     checkedIn: false,
                     timestamp: SERVER_TIMESTAMP
                 };
+                console.log('Step 4 OK');
 
                 // DBに保存
+                console.log('Step 5: dbSet');
                 await dbSet(`projects/${projectId}/entries/${uuid}`, entryData);
 
                 // メール通知（非同期・失敗しても登録は有効）
