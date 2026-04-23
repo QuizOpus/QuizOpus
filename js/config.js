@@ -36,8 +36,8 @@ const session = {
 // メール通知設定 (AWS SES via Lambda)
 // AWS セットアップ完了後に endpoint と apiKey を記入する
 const EMAIL_CONFIG = {
-  endpoint: '',  // 例: 'https://xxxxx.execute-api.ap-northeast-1.amazonaws.com/send-email'
-  apiKey: '',    // Lambda の API_SECRET_KEY と一致させる
+  endpoint: 'https://x6fnhov5w5.execute-api.ap-northeast-1.amazonaws.com/send-email',
+  apiKey: 'ciq2026ses',
 };
 if (typeof CIQEmail !== 'undefined' && EMAIL_CONFIG.endpoint) {
   CIQEmail.configure(EMAIL_CONFIG);
