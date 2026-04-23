@@ -278,9 +278,9 @@
                     const tr = document.createElement('tr');
                     if (v.status === 'canceled') tr.style.opacity = '0.5';
                     if (v.status === 'waitlist') tr.style.opacity = '0.7';
-                    const statText = v.status === 'canceled' ? '<span class="badge danger"><i class="fa-solid fa-xmark"></i> キ</span>'
-                        : v.status === 'waitlist' ? '<span class="badge" style="background:rgba(245,158,11,0.2);color:#f59e0b"><i class="fa-solid fa-clock"></i> 待</span>'
-                        : v.checkedIn ? '<span class="badge success"><i class="fa-solid fa-check"></i> 受付済</span>' : '<span class="badge muted"><i class="fa-regular fa-clock"></i> 未受付</span>';
+                    const statText = v.status === 'canceled' ? '<span class="badge danger" title="キャンセル"><i class="fa-solid fa-xmark"></i></span>'
+                        : v.status === 'waitlist' ? '<span class="badge" style="background:rgba(245,158,11,0.2);color:#f59e0b" title="キャンセル待ち"><i class="fa-solid fa-clock"></i></span>'
+                        : v.checkedIn ? '<span class="badge success" title="受付済"><i class="fa-solid fa-check"></i></span>' : '<span class="badge muted" title="未受付"><i class="fa-regular fa-clock"></i></span>';
 
                     tr.innerHTML = `
                     <td >${padNum(v.entryNumber) || '-'}</td>

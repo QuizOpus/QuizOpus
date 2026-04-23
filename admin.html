@@ -172,7 +172,7 @@
                     <div class="link-row"><span class="link-label"><i class="fa-solid fa-user-xmark"></i> キャンセル</span><a id="cancel-link" href="#" target="_blank" hidden></a><button class="btn secondary link-btn-sm" onclick="window.open(document.getElementById('cancel-link').href)"><i class="fa-solid fa-arrow-up-right-from-square"></i></button><button class="btn secondary link-btn-sm" onclick="copyUrl('cancel-link', this)"><i class="fa-solid fa-copy"></i></button></div>
                     <div class="link-row"><span class="link-label"><i class="fa-solid fa-chart-column"></i> 成績照会</span><a id="disclosure-link" href="#" target="_blank" hidden></a><button class="btn secondary link-btn-sm" onclick="window.open(document.getElementById('disclosure-link').href)"><i class="fa-solid fa-arrow-up-right-from-square"></i></button><button class="btn secondary link-btn-sm" onclick="copyUrl('disclosure-link', this)"><i class="fa-solid fa-copy"></i></button></div>
                 </div>
-                <button class="btn secondary mt-md" onclick="exportEntriesCSV()"><i class="fa-solid fa-file-csv"></i> 参加者名簿CSV</button>
+                <button class="btn secondary mt-md" onclick="exportEntriesCSV()"><i class="fa-solid fa-download"></i> 参加者名簿CSV</button>
             </div>
             <div class="section glass-panel">
                 <h2><i class="fa-solid fa-address-book"></i> 参加者一覧</h2>
@@ -182,7 +182,7 @@
                             <tr>
                                 <th><i class="fa-solid fa-hashtag"></i> 番号</th>
                                 <th><i class="fa-solid fa-user"></i> 氏名・カナ</th>
-                                <th><i class="fa-solid fa-id-badge"></i> エントリ名</th>
+                                <th><i class="fa-solid fa-id-badge"></i> エントリーネーム</th>
                                 <th><i class="fa-solid fa-school"></i> 所属</th>
                                 <th><i class="fa-solid fa-graduation-cap"></i> 学年</th>
                                 <th><i class="fa-solid fa-envelope"></i> メール・連絡</th>
@@ -208,7 +208,7 @@
                     <button type="button" class="number-spinner-btn" onclick="adjustNumberInput('question-count', 10)"><i class="fa-solid fa-plus"></i></button>
                 </div>
                 <div class="info-hint"><i class="fa-solid fa-circle-info"></i> 10の倍数で指定 / 列数は5固定</div>
-                <button class="btn mt-lg" onclick="generatePDF()"><i class="fa-solid fa-download"></i> ダウンロード</button>
+                <button class="btn secondary mt-lg" onclick="generatePDF()"><i class="fa-solid fa-download"></i> ダウンロード</button>
             </div>
 
             <div class="section glass-panel">
@@ -318,7 +318,7 @@
                         <i class="fa-solid fa-circle-info"></i> 文字数固定: 姓名の合計が指定文字数未満の場合、姓と名の間にスペースを挿入して揃えます。
                     </div>
                 </div>
-                <button class="btn secondary" id="csv-btn" disabled onclick="exportCSV()"><i class="fa-solid fa-file-csv"></i> 採点結果CSV出力</button>
+                <button class="btn secondary" id="csv-btn" disabled onclick="exportCSV()"><i class="fa-solid fa-download"></i> 採点結果CSV出力</button>
             </div>
             <div class="section glass-panel">
                 <h2><i class="fa-solid fa-magnifying-glass-chart"></i> 問題アナリティクス</h2>
@@ -332,10 +332,10 @@
                     <span>人以下をハイライト</span>
                 </div>
                 <div class="config-panel config-row" style="margin-top:8px;">
-                    <label class="toggle-switch"><input type="checkbox" id="analytics-name-toggle" onchange="renderAnalytics()"><span class="toggle-slider"></span></label>
+                    <label class="toggle-switch"><input type="checkbox" id="analytics-name-toggle" checked onchange="renderAnalytics()"><span class="toggle-slider"></span></label>
                     <span style="font-size:13px;">エントリーネームで表示</span>
                 </div>
-                <button class="btn secondary" onclick="exportAnalyticsCSV()"><i class="fa-solid fa-file-csv"></i> 正答率分析CSV</button>
+                <button class="btn secondary" onclick="exportAnalyticsCSV()"><i class="fa-solid fa-download"></i> 正答率分析CSV</button>
                 <div class="table-container mt-md" style="max-height:400px;">
                     <table id="analytics-table">
                         <thead>

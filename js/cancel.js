@@ -87,11 +87,8 @@ const params = new URLSearchParams(location.search);
 
 
 
-            // 更新処理
-            await dbUpdate(`projects/${projectId}/entries/${targetKey}`, {
-                status: 'canceled',
-                canceledAt: SERVER_TIMESTAMP
-            });
+            // エントリーを完全削除
+            await dbRef(`projects/${projectId}/entries/${targetKey}`).remove();
 
             // メール通知（非同期・失敗しても処理済み）
             CIQEmail.sendCancellation(email, {

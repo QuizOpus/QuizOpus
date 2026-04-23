@@ -365,7 +365,7 @@ body.page-conflict { padding: 0; }
 /* ──────────────────────────────────────────
    entry_list.html — Public Entry List
    ────────────────────────────────────────── */
-.stat-badge { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 24px; margin-bottom: 24px; }
+.stat-badge { display: inline-flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 24px; margin-bottom: 24px; }
 .stat-badge .stat-val { font-size: 28px; font-weight: 800; color: var(--primary); background: linear-gradient(135deg, #60a5fa, var(--primary)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 .stat-badge .stat-label { font-size: 14px; color: var(--text-muted); font-weight: 600; }
 .list-container { border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--glass-border); background: rgba(15, 23, 42, 0.35); backdrop-filter: blur(8px); }
