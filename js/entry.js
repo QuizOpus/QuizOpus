@@ -231,22 +231,4 @@ const params = new URLSearchParams(location.search);
             }
         }
 
-        // クレデンシャルをクリップボードにコピー
-        async function copyCredentials() {
-            const num = document.getElementById('r-entry-number').textContent;
-            const pw = document.getElementById('r-password').textContent;
-            const text = `受付番号: ${num}\nパスワード: ${pw}`;
-            try {
-                await navigator.clipboard.writeText(text);
-                const btn = document.getElementById('copy-credentials-btn');
-                btn.innerHTML = '<i class="fa-solid fa-check"></i> コピーしました！';
-                setTimeout(() => {
-                    btn.innerHTML = '<i class="fa-solid fa-copy"></i> 受付番号とパスワードをコピー';
-                }, 2000);
-            } catch(e) {
-                showToast('コピーに失敗しました。手動でコピーしてください。', 'error');
-            }
-        }
-        window.copyCredentials = copyCredentials;
-
         init();
