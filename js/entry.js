@@ -131,6 +131,11 @@ const params = new URLSearchParams(location.search);
                     encryptedPII,
                     emailHash,
                     disclosurePw: pwHash,
+                    // 公開フィールド（エントリーリスト表示用）
+                    entryName,
+                    affiliation,
+                    grade,
+                    message,
                     status: entryStatus,
                     checkedIn: false,
                     timestamp: SERVER_TIMESTAMP
