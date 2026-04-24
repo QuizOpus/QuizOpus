@@ -90,6 +90,8 @@
             const lOrigins = window.location.origin + window.location.pathname.replace('admin.html', '');
             document.getElementById('entry-link').href = `${lOrigins}entry_list.html?pid=${projectId}`;
             document.getElementById('entry-link').textContent = `${lOrigins}entry_list.html?pid=${projectId}`;
+            document.getElementById('edit-link').href = `${lOrigins}edit.html?pid=${projectId}`;
+            document.getElementById('edit-link').textContent = `${lOrigins}edit.html?pid=${projectId}`;
             document.getElementById('registration-link').href = `${lOrigins}entry.html?pid=${projectId}`;
             document.getElementById('registration-link').textContent = `${lOrigins}entry.html?pid=${projectId}`;
             document.getElementById('cancel-link').href = `${lOrigins}cancel.html?pid=${projectId}`;

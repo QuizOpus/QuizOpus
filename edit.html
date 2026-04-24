@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebasedatabase.app https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com; connect-src 'self' wss://*.firebasedatabase.app https://*.firebasedatabase.app https://*.googleapis.com https://www.gstatic.com; frame-src 'self' https://*.firebasedatabase.app https://*.firebaseapp.com; img-src 'self' data: blob:;">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <meta name="description" content="CIQ - エントリー内容の編集">
+    <title>CIQ - エントリー編集</title>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/crypto.js"></script>
+    <script src="js/shared.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/design_system.css">
+    <link rel="stylesheet" href="css/pages.css">
+</head>
+<body class="page-wrapper">
+    <div class="page-container">
+        <div class="page-logo">
+            <span class="logo-icon"><i class="fa-solid fa-pen-to-square"></i></span>
+            <h1 id="edit-title"><i class="fa-solid fa-spinner fa-spin"></i> 読み込み中...</h1>
+            <div class="logo-sub" id="edit-subtitle">エントリー編集</div>
+        </div>
+
+        <!-- 認証フォーム -->
+        <div class="page-card" id="auth-card">
+            <div class="form-group">
+                <label><i class="fa-solid fa-envelope"></i> メールアドレス</label>
+                <input type="email" class="page-input" id="f-email" required placeholder="example@gmail.com">
+            </div>
+            <div class="form-group">
+                <label><i class="fa-solid fa-key"></i> パスワード</label>
+                <input type="text" class="page-input" id="f-password" required placeholder="------">
+            </div>
+            <button class="page-btn" id="auth-btn" onclick="authenticate()"><i class="fa-solid fa-right-to-bracket"></i> 認証してエントリーを編集</button>
+            <div class="page-msg" id="auth-msg"></div>
+        </div>
+
+        <!-- 編集フォーム -->
+        <div class="page-card" id="edit-card" style="display:none">
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:20px;padding:12px;background:rgba(255,255,255,0.03);border-radius:var(--radius-md);border:1px solid var(--glass-border);">
+                <i class="fa-solid fa-hashtag"></i> 受付番号: <strong id="edit-entry-number"></strong>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="required">姓</label>
+                    <input type="text" class="page-input" id="e-family-name" required placeholder="山田">
+                </div>
+                <div class="form-group">
+                    <label class="required">名</label>
+                    <input type="text" class="page-input" id="e-first-name" required placeholder="太郎">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="required">セイ (全角カタカナ)</label>
+                    <input type="text" id="e-family-kana" required placeholder="ヤマダ" pattern="^[ァ-ヴー]+$" title="全角カタカナで入力してください">
+                </div>
+                <div class="form-group">
+                    <label class="required">メイ (全角カタカナ)</label>
+                    <input type="text" id="e-first-kana" required placeholder="タロウ" pattern="^[ァ-ヴー]+$" title="全角カタカナで入力してください">
+                </div>
+            </div>
+
+            <div id="affiliation-section">
+                <div class="form-row">
+                    <div class="form-group" style="flex:2">
+                        <label class="required"><i class="fa-solid fa-school"></i> 所属教育機関</label>
+                        <input type="text" id="e-affiliation" required placeholder="○○高">
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label class="required"><i class="fa-solid fa-graduation-cap"></i> 学年</label>
+                        <select id="e-grade" class="custom-select" required>
+                            <option value="">選択</option>
+                            <option value="１年">１年</option>
+                            <option value="２年">２年</option>
+                            <option value="３年">３年</option>
+                            <option value="４年">４年</option>
+                            <option value="５年">５年</option>
+                            <option value="６年">６年</option>
+                            <option value="非表示">非表示</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="custom-checkbox">
+                    <input type="checkbox" id="e-chubu">
+                    <span class="checkbox-mark"><svg class="checkbox-svg" viewBox="0 0 16 16"><path d="M3 8.5L6.5 12L13 4"></path></svg></span>
+                    <div style="flex:1">
+                        <span>所属教育機関は<strong>中部地方</strong>（愛知・岐阜・三重・静岡・長野・山梨・新潟・富山・石川・福井）にあります</span>
+                    </div>
+                </label>
+            </div>
+
+            <div class="form-group">
+                <label class="required"><i class="fa-solid fa-id-badge"></i> エントリーネーム</label>
+                <input type="text" id="e-entry-name" required placeholder="エントリーシートでの表示名">
+            </div>
+
+            <div class="form-group">
+                <label><i class="fa-solid fa-comment"></i> 意気込み</label>
+                <input type="text" id="e-message" placeholder="大会への意気込みをどうぞ！(公開されます)">
+            </div>
+
+            <div class="form-group">
+                <label><i class="fa-solid fa-message"></i> 運営への連絡</label>
+                <textarea id="e-inquiry" placeholder="配慮事項などがあればご記入ください"></textarea>
+            </div>
+
+            <button class="page-btn" id="save-btn" onclick="saveEdit()"><i class="fa-solid fa-floppy-disk"></i> 変更を保存する</button>
+            <div class="page-msg" id="edit-msg"></div>
+        </div>
+
+        <!-- 完了 -->
+        <div class="page-card" id="done-card" style="display:none;text-align:center;">
+            <i class="fa-solid fa-circle-check" style="font-size:48px;color:#34d399;margin-bottom:16px;display:block;"></i>
+            <p style="font-size:18px;font-weight:700;">エントリー内容を更新しました</p>
+        </div>
+
+        <div class="page-footer">Powered by CIQ</div>
+    </div>
+
+    <script src="js/edit.js"></script>
+</body>
+</html>

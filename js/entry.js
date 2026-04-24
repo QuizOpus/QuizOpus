@@ -143,6 +143,7 @@ const params = new URLSearchParams(location.search);
 
                 // メール通知（非同期・失敗しても登録は有効）
                 const pName = document.getElementById('project-title').textContent || projectId;
+                const editUrl = `${window.location.origin}${window.location.pathname.replace('entry.html', '')}edit.html?pid=${projectId}`;
                 CIQEmail.sendEntryConfirmation(email, {
                     projectName: pName,
                     entryNumber: String(entryNumber).padStart(3, '0'),
@@ -151,6 +152,7 @@ const params = new URLSearchParams(location.search);
                     familyName,
                     firstName,
                     status: entryStatus,
+                    editUrl,
                 }).catch(e => console.warn('メール送信スキップ:', e));
 
                 // 成功画面を表示

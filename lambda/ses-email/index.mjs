@@ -22,7 +22,7 @@ function qrUrl(data, size = 200) {
 
 const templates = {
   // エントリー完了通知（HTML + QRコード）
-  entry_confirmation: ({ projectName, entryNumber, password, uuid, familyName, firstName, status }) => ({
+  entry_confirmation: ({ projectName, entryNumber, password, uuid, familyName, firstName, status, editUrl }) => ({
     subject: `【${projectName}】エントリー受付完了（No.${entryNumber}）`,
     html: `
       <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:480px;margin:0 auto;background:#f8fafc;border-radius:12px;overflow:hidden;">
@@ -54,6 +54,10 @@ const templates = {
             <img src="${qrUrl(uuid)}" alt="QR Code" width="200" height="200" style="border-radius:8px;" />
             <p style="color:#94a3b8;font-size:11px;margin:12px 0 0;">当日このQRコードを受付でご提示ください</p>
           </div>
+
+          ${editUrl ? `<div style="text-align:center;margin-bottom:16px;">
+            <a href="${editUrl}" style="display:inline-block;background:#3b82f6;color:white;text-decoration:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:600;">エントリー内容を編集する</a>
+          </div>` : ''}
 
           <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:12px;font-size:12px;color:#9a3412;">
             <strong>⚠️ 重要:</strong> パスワードは成績照合・キャンセル時に必要です。このメールを保管してください。

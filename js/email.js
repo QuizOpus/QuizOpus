@@ -44,9 +44,9 @@ const CIQEmail = (() => {
     }
 
     // エントリー完了メール
-    async function sendEntryConfirmation(to, { projectName, entryNumber, password, uuid, familyName, firstName, status }) {
+    async function sendEntryConfirmation(to, { projectName, entryNumber, password, uuid, familyName, firstName, status, editUrl }) {
         return _send('entry_confirmation', to, {
-            projectName, entryNumber, password, uuid, familyName, firstName, status,
+            projectName, entryNumber, password, uuid, familyName, firstName, status, editUrl,
         });
     }
 
