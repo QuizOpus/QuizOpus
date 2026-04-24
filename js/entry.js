@@ -18,6 +18,81 @@ const params = new URLSearchParams(location.search);
             });
         }
 
+        // メール認証状態
+        let emailVerified = false;
+        let verifiedEmail = '';
+        let verifySignature = '';
+        let verifyExpiresAt = 0;
+
+        function showVerifyMsg(msg, type) {
+            const el = document.getElementById('verify-msg');
+            el.innerHTML = msg;
+            el.className = `page-msg ${type}`;
+            el.style.display = 'block';
+        }
+
+        async function sendVerification() {
+            const email = document.getElementById('f-email').value.trim();
+            if (!email || !email.includes('@')) {
+                showVerifyMsg('有効なメールアドレスを入力してください。', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('send-code-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 送信中...';
+            showVerifyMsg('認証コードを送信しています...', '');
+
+            const pName = document.getElementById('project-title')?.textContent || projectId;
+            const result = await CIQEmail.sendVerificationCode(email, pName);
+
+            if (!result || !result.success) {
+                showVerifyMsg('認証コードの送信に失敗しました。メールアドレスを確認してください。', 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> 認証コードを送信';
+                return;
+            }
+
+            verifySignature = result.signature;
+            verifyExpiresAt = result.expiresAt;
+
+            document.getElementById('f-email').disabled = true;
+            document.getElementById('code-input-area').style.display = 'block';
+            btn.style.display = 'none';
+            showVerifyMsg(`<i class="fa-solid fa-envelope-circle-check"></i> ${email} に6桁の認証コードを送信しました。`, 'success');
+            document.getElementById('f-verify-code').focus();
+        }
+
+        async function verifyEmailCode() {
+            const code = document.getElementById('f-verify-code').value.trim();
+            const email = document.getElementById('f-email').value.trim();
+
+            if (!code || code.length !== 6) {
+                showVerifyMsg('6桁の認証コードを入力してください。', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('verify-code-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 確認中...';
+
+            const verified = await CIQEmail.verifyCode(email, code, verifySignature, verifyExpiresAt);
+
+            if (!verified) {
+                showVerifyMsg('認証コードが正しくないか、有効期限が切れています。', 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-check-circle"></i> 認証する';
+                return;
+            }
+
+            // 認証成功
+            emailVerified = true;
+            verifiedEmail = email;
+            document.getElementById('email-verify-section').style.display = 'none';
+            document.getElementById('form-body').style.display = 'block';
+            document.getElementById('verified-email').textContent = email;
+        }
+
         function generatePW() {
             const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
             let pw = '';
@@ -39,7 +114,11 @@ const params = new URLSearchParams(location.search);
 
             const btn = document.getElementById('submit-btn');
 
-            const email = document.getElementById('f-email').value.trim();
+            if (!emailVerified || !verifiedEmail) {
+                showStatus('メールアドレスの認証を先に完了してください。', 'error');
+                return;
+            }
+            const email = verifiedEmail;
             const familyName = document.getElementById('f-family-name').value.trim();
             const firstName = document.getElementById('f-first-name').value.trim();
             const familyNameKana = document.getElementById('f-family-kana').value.trim();

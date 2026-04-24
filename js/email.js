@@ -57,5 +57,49 @@ const CIQEmail = (() => {
         });
     }
 
-    return { configure, sendEntryConfirmation, sendCancellation };
+    // メール認証コード送信
+    async function sendVerificationCode(to, projectName) {
+        if (!_endpoint) {
+            console.warn('[CIQEmail] endpoint未設定 — 認証コード送信をスキップ');
+            return null;
+        }
+        try {
+            const res = await fetch(_endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Api-Key': _apiKey,
+                },
+                body: JSON.stringify({ type: 'send_verification', to, data: { projectName } }),
+            });
+            if (!res.ok) return null;
+            return await res.json(); // { success, signature, expiresAt }
+        } catch (e) {
+            console.error('[CIQEmail] 認証コード送信エラー:', e);
+            return null;
+        }
+    }
+
+    // メール認証コード検証
+    async function verifyCode(email, code, signature, expiresAt) {
+        if (!_endpoint) return false;
+        try {
+            const res = await fetch(_endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Api-Key': _apiKey,
+                },
+                body: JSON.stringify({ type: 'verify_code', to: email, data: { code, signature, expiresAt } }),
+            });
+            if (!res.ok) return false;
+            const result = await res.json();
+            return result.verified === true;
+        } catch (e) {
+            console.error('[CIQEmail] 認証コード検証エラー:', e);
+            return false;
+        }
+    }
+
+    return { configure, sendEntryConfirmation, sendCancellation, sendVerificationCode, verifyCode };
 })();

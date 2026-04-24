@@ -112,6 +112,14 @@ const templates = {
   }),
 };
 
+// ── HMAC署名ユーティリティ（認証コード検証用）──────
+import { createHmac } from "crypto";
+
+function signCode(code, email, expiresAt) {
+  const payload = `${code}:${email.toLowerCase()}:${expiresAt}`;
+  return createHmac('sha256', API_KEY).update(payload).digest('hex');
+}
+
 // ── ハンドラー ──────────────────────────────────
 
 export const handler = async (event) => {
@@ -138,6 +146,64 @@ export const handler = async (event) => {
 
     const { type, to, data } = body;
 
+    // ── メール認証コード送信 ──
+    if (type === 'send_verification') {
+      if (!to) {
+        return { statusCode: 400, headers, body: JSON.stringify({ error: "Missing 'to' field" }) };
+      }
+      const code = String(Math.floor(100000 + Math.random() * 900000)); // 6桁
+      const expiresAt = Date.now() + 10 * 60 * 1000; // 10分有効
+      const signature = signCode(code, to, expiresAt);
+
+      const projectName = data?.projectName || 'CIQ';
+
+      await ses.send(new SendEmailCommand({
+        Source: FROM,
+        Destination: { ToAddresses: [to] },
+        Message: {
+          Subject: { Data: `【${projectName}】メール認証コード`, Charset: "UTF-8" },
+          Body: {
+            Html: { Data: `
+              <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:480px;margin:0 auto;background:#f8fafc;border-radius:12px;overflow:hidden;">
+                <div style="background:linear-gradient(135deg,#1e293b,#0f172a);padding:24px;text-align:center;">
+                  <h1 style="color:white;font-size:20px;margin:0;">メール認証コード</h1>
+                  <p style="color:#94a3b8;font-size:13px;margin:8px 0 0;">${projectName}</p>
+                </div>
+                <div style="padding:24px;text-align:center;">
+                  <p style="color:#334155;font-size:14px;margin:0 0 16px;">エントリーフォームに以下のコードを入力してください。</p>
+                  <div style="background:white;border:2px solid #3b82f6;border-radius:12px;padding:20px;margin-bottom:16px;">
+                    <span style="font-size:36px;font-weight:800;letter-spacing:8px;color:#1e293b;font-family:monospace;">${code}</span>
+                  </div>
+                  <p style="color:#94a3b8;font-size:12px;">このコードは10分間有効です。</p>
+                </div>
+                <div style="background:#f1f5f9;padding:12px;text-align:center;font-size:11px;color:#94a3b8;">
+                  CIQ — このメールは自動送信されています
+                </div>
+              </div>
+            `, Charset: "UTF-8" },
+            Text: { Data: `認証コード: ${code}\nこのコードは10分間有効です。`, Charset: "UTF-8" },
+          },
+        },
+      }));
+
+      return { statusCode: 200, headers, body: JSON.stringify({ success: true, signature, expiresAt }) };
+    }
+
+    // ── メール認証コード検証 ──
+    if (type === 'verify_code') {
+      const { code, signature, expiresAt } = data || {};
+      if (!to || !code || !signature || !expiresAt) {
+        return { statusCode: 400, headers, body: JSON.stringify({ error: "Missing fields" }) };
+      }
+      if (Date.now() > expiresAt) {
+        return { statusCode: 400, headers, body: JSON.stringify({ error: "Code expired", verified: false }) };
+      }
+      const expected = signCode(code, to, expiresAt);
+      const verified = expected === signature;
+      return { statusCode: 200, headers, body: JSON.stringify({ verified }) };
+    }
+
+    // ── 通常のテンプレートメール送信 ──
     if (!type || !to || !data) {
       return { statusCode: 400, headers, body: JSON.stringify({ error: "Missing required fields: type, to, data" }) };
     }
