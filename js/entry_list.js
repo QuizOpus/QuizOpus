@@ -71,13 +71,14 @@ const params = new URLSearchParams(location.search);
             lateOther = [];
         }
 
+        const earlyCount = early.length;
         const ordered = [...early, ...lateChubu, ...lateOther];
         ordered.forEach((e, i) => {
             e._priority = i + 1;
-            // 定員を超えたらキャンセル待ち扱い
             e._isWaitlist = maxEntries > 0 && e._priority > maxEntries;
+            e._isAfterGrace = i >= earlyCount && cutoff > 0;
         });
-        return ordered;
+        return { ordered, earlyCount, hasGraceSplit: cutoff > 0 && earlyCount < ordered.length };
     }
 
     function renderList(data) {
@@ -91,7 +92,7 @@ const params = new URLSearchParams(location.search);
         }
 
         const entries = Object.values(data);
-        const ordered = calcPriority(entries);
+        const { ordered, earlyCount, hasGraceSplit } = calcPriority(entries);
 
         const confirmed = ordered.filter(e => !e._isWaitlist);
         const waitlist = ordered.filter(e => e._isWaitlist);
@@ -121,7 +122,19 @@ const params = new URLSearchParams(location.search);
             body.appendChild(tr);
         };
 
-        confirmed.forEach(e => renderRow(e, false));
+        // 先着順エリア（30分以内）
+        let graceDividerInserted = false;
+        confirmed.forEach(e => {
+            if (!graceDividerInserted && hasGraceSplit && e._isAfterGrace) {
+                graceDividerInserted = true;
+                const divider = document.createElement('tr');
+                divider.innerHTML = `<td colspan="7" style="text-align:center;padding:8px;background:rgba(96,165,250,0.1);color:#60a5fa;font-size:12px;font-weight:600;letter-spacing:1px;">
+                    <i class="fa-solid fa-map-location-dot"></i> 以降中部地方優先
+                </td>`;
+                body.appendChild(divider);
+            }
+            renderRow(e, false);
+        });
 
         if (waitlist.length > 0) {
             const divider = document.createElement('tr');
