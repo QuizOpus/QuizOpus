@@ -23,12 +23,58 @@ const params = new URLSearchParams(location.search);
         let verifiedEmail = '';
         let verifySignature = '';
         let verifyExpiresAt = 0;
+        let resendCooldown = null;
+        let sessionTimer = null;
+        const SESSION_TIMEOUT = 10 * 60 * 1000; // 認証後10分でリセット
 
         function showVerifyMsg(msg, type) {
             const el = document.getElementById('verify-msg');
             el.innerHTML = msg;
             el.className = `page-msg ${type}`;
             el.style.display = 'block';
+        }
+
+        function startResendCooldown() {
+            let sec = 10;
+            const resendBtn = document.getElementById('resend-code-btn');
+            resendBtn.style.display = 'inline-block';
+            resendBtn.disabled = true;
+            resendBtn.innerHTML = `<i class="fa-solid fa-clock"></i> 再送信（${sec}秒）`;
+            clearInterval(resendCooldown);
+            resendCooldown = setInterval(() => {
+                sec--;
+                if (sec <= 0) {
+                    clearInterval(resendCooldown);
+                    resendBtn.disabled = false;
+                    resendBtn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> 認証コードを再送信';
+                } else {
+                    resendBtn.innerHTML = `<i class="fa-solid fa-clock"></i> 再送信（${sec}秒）`;
+                }
+            }, 1000);
+        }
+
+        async function resendVerification() {
+            const email = document.getElementById('f-email').value.trim();
+            const resendBtn = document.getElementById('resend-code-btn');
+            resendBtn.disabled = true;
+            resendBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 送信中...';
+            showVerifyMsg('認証コードを再送信しています...', '');
+
+            const pName = document.getElementById('project-title')?.textContent || projectId;
+            const result = await CIQEmail.sendVerificationCode(email, pName);
+
+            if (!result || !result.success) {
+                showVerifyMsg('再送信に失敗しました。', 'error');
+                resendBtn.disabled = false;
+                resendBtn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> 認証コードを再送信';
+                return;
+            }
+
+            verifySignature = result.signature;
+            verifyExpiresAt = result.expiresAt;
+            document.getElementById('f-verify-code').value = '';
+            showVerifyMsg(`<i class="fa-solid fa-envelope-circle-check"></i> ${email} に認証コードを再送信しました。`, 'success');
+            startResendCooldown();
         }
 
         async function sendVerification() {
@@ -61,6 +107,7 @@ const params = new URLSearchParams(location.search);
             btn.style.display = 'none';
             showVerifyMsg(`<i class="fa-solid fa-envelope-circle-check"></i> ${email} に6桁の認証コードを送信しました。`, 'success');
             document.getElementById('f-verify-code').focus();
+            startResendCooldown();
         }
 
         async function verifyEmailCode() {
@@ -88,9 +135,27 @@ const params = new URLSearchParams(location.search);
             // 認証成功
             emailVerified = true;
             verifiedEmail = email;
+            clearInterval(resendCooldown);
             document.getElementById('email-verify-section').style.display = 'none';
             document.getElementById('form-body').style.display = 'block';
             document.getElementById('verified-email').textContent = email;
+
+            // セッションタイムアウト（10分後にリセット）
+            sessionTimer = setTimeout(() => {
+                emailVerified = false;
+                verifiedEmail = '';
+                document.getElementById('form-body').style.display = 'none';
+                document.getElementById('email-verify-section').style.display = 'block';
+                document.getElementById('f-email').disabled = false;
+                document.getElementById('f-email').value = '';
+                document.getElementById('f-verify-code').value = '';
+                document.getElementById('code-input-area').style.display = 'none';
+                document.getElementById('send-code-btn').style.display = '';
+                document.getElementById('send-code-btn').disabled = false;
+                document.getElementById('send-code-btn').innerHTML = '<i class="fa-solid fa-paper-plane"></i> 認証コードを送信';
+                document.getElementById('resend-code-btn').style.display = 'none';
+                showVerifyMsg('<i class="fa-solid fa-clock"></i> セッションの有効期限が切れました。再度メール認証を行ってください。', 'error');
+            }, SESSION_TIMEOUT);
         }
 
         function generatePW() {
