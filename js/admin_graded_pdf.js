@@ -75,19 +75,22 @@
 
                     // 座標スケール: cellRegionsはフル解像度基準、画像は縮小済み
                     const originalWidth = ansData.pageWidth || img.width;
-                    const scale = img.width / originalWidth;
-                    if (idx === 0) console.log(`[GradedPDF] img: ${img.width}x${img.height}, pageWidth: ${originalWidth}, scale: ${scale.toFixed(4)}`);
+                    const scaleX = img.width / originalWidth;
+                    // pageHeightは未保存 → A4比率(297/210)から推定してY軸を個別スケール
+                    const estimatedOriginalHeight = originalWidth * (297 / 210);
+                    const scaleY = img.height / estimatedOriginalHeight;
+                    if (idx === 0) console.log(`[GradedPDF] img: ${img.width}x${img.height}, pageWidth: ${originalWidth}, scaleX: ${scaleX.toFixed(4)}, scaleY: ${scaleY.toFixed(4)}`);
 
                     // ○/× マーク描画（半透明）
                     const result = entryResults[en];
                     for (let q = 1; q <= totalQuestions; q++) {
                         const region = cellRegions[`q${q}`];
                         if (!region) continue;
-                        // スケール適用
-                        const rx = region.x * scale;
-                        const ry = region.y * scale;
-                        const rw = region.w * scale;
-                        const rh = region.h * scale;
+                        // X/Y別スケール適用
+                        const rx = region.x * scaleX;
+                        const ry = region.y * scaleY;
+                        const rw = region.w * scaleX;
+                        const rh = region.h * scaleY;
                         const cx = rx + rw / 2;
                         const cy = ry + rh / 2;
                         const radius = Math.min(rw, rh) * 0.3;
@@ -127,7 +130,7 @@
 
                     const lastRegion = cellRegions[`q${totalQuestions}`];
                     const scoreY = lastRegion
-                        ? (lastRegion.y + lastRegion.h) * scale + fontSize * 1.5
+                        ? (lastRegion.y + lastRegion.h) * scaleY + fontSize * 1.5
                         : canvas.height * 0.88;
 
                     const scoreText = `Score: ${result.score}  |  Streak 1: ${result.topStreaks[0] || 0}  |  Streak 2: ${result.topStreaks[1] || 0}`;
