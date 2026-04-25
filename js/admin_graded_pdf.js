@@ -40,6 +40,13 @@
                 const pdfW = 210, pdfH = 297;
                 let isFirstPage = true;
 
+                // レイアウト設定をロード（mm座標 → 画像座標に直接変換）
+                const scanConfig = await dbGet(`projects/${projectId}/protected/${secretHash}/config`);
+                const cfgRegions = scanConfig?.answerRegions;
+                if (!cfgRegions) { throw new Error('レイアウト設定が見つかりません'); }
+                // A4: 210mm x 297mm
+                const A4W = 210, A4H = 297;
+
                 const total = sortedEntries.length;
                 for (let idx = 0; idx < total; idx++) {
                     const en = sortedEntries[idx];
@@ -53,11 +60,6 @@
                         imageUrl = ansData?.pageImage;
                     }
                     if (!imageUrl) continue;
-
-                    // セル座標取得
-                    const ansData = await dbGet(`projects/${projectId}/protected/${secretHash}/answers/${en}`);
-                    const cellRegions = ansData?.cellRegions;
-                    if (!cellRegions) continue;
 
                     // 画像をCanvasにロード
                     const img = await new Promise((resolve, reject) => {
@@ -73,24 +75,19 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0);
 
-                    // 座標スケール: cellRegionsはフル解像度基準、画像は縮小済み
-                    const originalWidth = ansData.pageWidth || img.width;
-                    const scaleX = img.width / originalWidth;
-                    // pageHeightは未保存 → A4比率(297/210)から推定してY軸を個別スケール
-                    const estimatedOriginalHeight = originalWidth * (297 / 210);
-                    const scaleY = img.height / estimatedOriginalHeight;
-                    if (idx === 0) console.log(`[GradedPDF] img: ${img.width}x${img.height}, pageWidth: ${originalWidth}, scaleX: ${scaleX.toFixed(4)}, scaleY: ${scaleY.toFixed(4)}`);
+                    // mm → pixel 変換（A4ページ基準で直接マッピング）
+                    const pxPerMmX = img.width / A4W;
+                    const pxPerMmY = img.height / A4H;
 
                     // ○/× マーク描画（半透明）
                     const result = entryResults[en];
                     for (let q = 1; q <= totalQuestions; q++) {
-                        const region = cellRegions[`q${q}`];
-                        if (!region) continue;
-                        // X/Y別スケール適用
-                        const rx = region.x * scaleX;
-                        const ry = region.y * scaleY;
-                        const rw = region.w * scaleX;
-                        const rh = region.h * scaleY;
+                        const mmRegion = cfgRegions[q - 1];
+                        if (!mmRegion) continue;
+                        const rx = mmRegion.x * pxPerMmX;
+                        const ry = mmRegion.y * pxPerMmY;
+                        const rw = mmRegion.w * pxPerMmX;
+                        const rh = mmRegion.h * pxPerMmY;
                         const cx = rx + rw / 2;
                         const cy = ry + rh / 2;
                         const radius = Math.min(rw, rh) * 0.3;
@@ -128,9 +125,10 @@
                     ctx.fillStyle = '#ef4444';
                     ctx.globalAlpha = 0.9;
 
-                    const lastRegion = cellRegions[`q${totalQuestions}`];
-                    const scoreY = lastRegion
-                        ? (lastRegion.y + lastRegion.h) * scaleY + fontSize * 1.5
+                    // 最後の問題セルの下
+                    const lastMm = cfgRegions[totalQuestions - 1];
+                    const scoreY = lastMm
+                        ? (lastMm.y + lastMm.h) * pxPerMmY + fontSize * 1.5
                         : canvas.height * 0.88;
 
                     const scoreText = `Score: ${result.score}  |  Streak 1: ${result.topStreaks[0] || 0}  |  Streak 2: ${result.topStreaks[1] || 0}`;

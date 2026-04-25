@@ -393,14 +393,29 @@ body.page-conflict { padding: 0; }
 /* ──────────────────────────────────────────
    terms.html — Participation Terms
    ────────────────────────────────────────── */
-.terms-container { max-width: 800px; margin: 60px auto; padding: 40px; background: linear-gradient(145deg, rgba(30, 41, 59, 0.65), rgba(15, 23, 42, 0.85)); backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%); border: 1px solid var(--glass-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); line-height: 1.8; font-family: var(--font-family); position: relative; }
-.terms-container h1 { font-size: 24px; margin-bottom: 24px; color: white; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 12px; }
-.terms-container h2 { font-size: 20px; margin-top: 32px; margin-bottom: 16px; color: var(--primary); }
-.terms-container h3 { font-size: 16px; margin-top: 24px; margin-bottom: 12px; color: #e2e8f0; }
-.terms-container p { margin-bottom: 1em; color: var(--text-muted); }
-.terms-container ul, .terms-container ol { margin-bottom: 1em; padding-left: 24px; color: var(--text-muted); }
-.terms-container li { margin-bottom: 8px; }
-.terms-container a { color: var(--primary); text-decoration: underline; }
+/* terms-body: Markdown rendered content inside page-card */
+.terms-body { line-height: 1.85; font-size: 14px; color: var(--text-muted); word-break: break-word; }
+.terms-body h1 { font-size: 22px; font-weight: 800; color: var(--text-main); margin: 0 0 16px; padding-bottom: 12px; border-bottom: 1px solid var(--glass-border); }
+.terms-body h2 { font-size: 17px; font-weight: 700; color: #60a5fa; margin: 28px 0 12px; padding-left: 12px; border-left: 3px solid #3b82f6; }
+.terms-body h3 { font-size: 15px; font-weight: 700; color: var(--text-main); margin: 24px 0 10px; }
+.terms-body h4 { font-size: 14px; font-weight: 700; color: var(--text-main); margin: 20px 0 8px; }
+.terms-body p { margin: 0 0 14px; }
+.terms-body ul, .terms-body ol { margin: 0 0 14px; padding-left: 22px; }
+.terms-body li { margin-bottom: 6px; }
+.terms-body li::marker { color: #60a5fa; }
+.terms-body a { color: #60a5fa; text-decoration: underline; text-underline-offset: 2px; transition: color 0.2s; }
+.terms-body a:hover { color: #93c5fd; }
+.terms-body blockquote { margin: 14px 0; padding: 12px 16px; border-left: 3px solid rgba(99,102,241,0.5); background: rgba(99,102,241,0.06); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; color: var(--text-main); font-size: 13px; }
+.terms-body code { background: rgba(0,0,0,0.35); padding: 2px 6px; border-radius: 4px; font-size: 12px; font-family: 'Courier New', monospace; color: #e2e8f0; }
+.terms-body pre { background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: var(--radius-md); padding: 14px 16px; overflow-x: auto; margin: 0 0 14px; }
+.terms-body pre code { background: none; padding: 0; font-size: 13px; }
+.terms-body hr { border: none; border-top: 1px solid var(--glass-border); margin: 24px 0; }
+.terms-body table { width: 100%; border-collapse: collapse; margin: 0 0 14px; font-size: 13px; }
+.terms-body th { background: rgba(15,23,42,0.6); color: var(--text-main); font-weight: 600; text-align: left; padding: 10px 12px; border: 1px solid var(--glass-border); }
+.terms-body td { padding: 10px 12px; border: 1px solid var(--glass-border); }
+.terms-body strong { color: var(--text-main); font-weight: 700; }
+.terms-body em { color: #94a3b8; }
+.terms-body img { max-width: 100%; border-radius: var(--radius-md); margin: 8px 0; }
 .terms-loading { text-align: center; color: var(--text-muted); padding: 40px; }
 
 /* ──────────────────────────────────────────
