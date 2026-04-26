@@ -434,12 +434,14 @@
                     try { await dbRef(p).remove(); } catch(e) { console.warn(`削除スキップ: ${p}`, e.message); }
                 };
                 const protectedBase = `projects/${projectId}/protected/${secretHash}`;
+                const adminBase = `projects/${projectId}/protected/${adminHash}`;
                 await Promise.all([
                     removePath(`${protectedBase}/scores`),
                     removePath(`${protectedBase}/answers`),
                     removePath(`${protectedBase}/answers_text`),
                     removePath(`${protectedBase}/answerCells`),
                     removePath(`${protectedBase}/answerImages`),
+                    removePath(`${adminBase}/finalResults`),
                     removePath(`projects/${projectId}/entries`),
                     removePath(`projects/${projectId}/disclosure`),
                 ]);

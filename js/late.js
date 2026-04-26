@@ -13,7 +13,6 @@ const params = new URLSearchParams(location.search);
         await waitForAuth();
         try {
             let pName = await dbGet(`projects/${projectId}/publicSettings/projectName`);
-            if (!pName) pName = await dbGet(`projects/${projectId}/settings/projectName`);
             document.getElementById('late-title').textContent = pName || projectId;
             document.title = (pName || projectId) + ' - 遅刻フォーム';
         } catch(e) {
@@ -58,7 +57,7 @@ const params = new URLSearchParams(location.search);
             const pwHash = await AppCrypto.hashPassword(pw);
 
             for (const [key, data] of Object.entries(entriesData)) {
-                if (data.disclosurePw === pwHash || data.disclosurePw === pw) {
+                if (data.disclosurePw === pwHash) {
                     targetKey = key;
                     targetData = data;
                     matched = true;

@@ -15,7 +15,6 @@ const params = new URLSearchParams(location.search);
         await waitForAuth();
         try {
             let pName = await dbGet(`projects/${projectId}/publicSettings/projectName`);
-            if (!pName) pName = await dbGet(`projects/${projectId}/settings/projectName`);
             document.getElementById('edit-title').textContent = pName || projectId;
             document.title = (pName || projectId) + ' - エントリー編集';
         } catch(e) {
@@ -65,7 +64,7 @@ const params = new URLSearchParams(location.search);
             let matched = false;
 
             for (const [key, data] of Object.entries(entriesData)) {
-                if (data.disclosurePw === pwHash || data.disclosurePw === pw) {
+                if (data.disclosurePw === pwHash) {
                     targetKey = key;
                     targetData = data;
                     matched = true;

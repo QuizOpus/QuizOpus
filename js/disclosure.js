@@ -52,7 +52,7 @@ const params = new URLSearchParams(location.search);
             const pwHash = await AppCrypto.hashPassword(pw);
 
             for (const d of Object.values(entriesData)) {
-                if (d.disclosurePw === pwHash || d.disclosurePw === pw) {
+                if (d.disclosurePw === pwHash) {
                     matched = true; entryData = d;
                 }
             }
