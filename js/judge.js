@@ -76,8 +76,6 @@ let requiredScorers = 3;
                             const pii = JSON.parse(jsonStr);
                             name = `${pii.familyName} ${pii.firstName}`;
                         } catch(e) {}
-                    } else if (!v.encryptedPII && v.familyName) {
-                        name = `${v.familyName} ${v.firstName}`;
                     }
                     masterData[v.entryNumber] = { name };
                 }

@@ -128,12 +128,10 @@
                             useEntryName = !!pii.useEntryName;
                         } catch(e) {}
                     } else {
-                        familyName = v.familyName || '';
-                        firstName = v.firstName || '';
+                        // PII復号不可の場合、公開フィールドのみ使用
                         affiliation = v.affiliation || '';
                         grade = v.grade || '';
                         entryName = v.entryName || '';
-                        useEntryName = !!v.useEntryName;
                     }
                     masterData[v.entryNumber] = { familyName, firstName, affiliation, grade, entryName, useEntryName };
                 }
